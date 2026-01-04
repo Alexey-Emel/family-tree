@@ -751,7 +751,7 @@
                 if (p.studyYear) years.add(p.studyYear);
                 p.curatorHistory.forEach(c => years.add(c.year));
             });
-            return Array.from(years).sort((a, b) => a - b);
+            return Array.from(years).sort((a, b) => b - a); // Было a - b, стало b - a
         }
 
         function getAllGroups() {
