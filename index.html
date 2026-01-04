@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Семейное древо отряда</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a1a0a 0%, #0d2818 50%, #1a3a2a 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            background: rgba(34, 197, 94, 0.1);
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #4ade80;
+        }
+
+        .header p {
+            color: #86efac;
+        }
+
+        /* Загрузка */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86efac;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(34, 197, 94, 0.2);
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Статистика */
+        .stats-panel {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 15px;
+            margin: 20px;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4ade80;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #86efac;
+            margin-top: 5px;
+        }
+
+        /* Фильтры */
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #22c55e;
+            background: transparent;
+            color: #4ade80;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: #22c55e;
+            color: #0a1a0a;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+        }
+
+        select.filter-btn {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        select.filter-btn option {
+            background: #0d2818;
+            color: #fff;
+        }
+
+        .search-box {
+            padding: 10px 20px;
+            border: 2px solid #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            color: #fff;
+            border-radius: 25px;
+            font-size: 1rem;
+            width: 250px;
+        }
+
+        .search-box::placeholder {
+            color: #86efac;
+        }
+
+        .search-box:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+        }
+
+        /* Контейнер дерева */
+        .tree-container {
+            padding: 40px 20px;
+            overflow-x: auto;
+        }
+
+        .year-block {
+            margin-bottom: 50px;
+        }
+
+        .year-title {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #4ade80;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+        }
+
+        .group-block {
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .group-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: #86efac;
+        }
+
+        .family {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .parents {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .children {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .children::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 15px;
+            background: linear-gradient(to bottom, #22c55e, #4ade80);
+        }
+
+        .person-card {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 120px;
+        }
+
+        .person-card:hover {
+            transform: translateY(-5px);
+            background: rgba(34, 197, 94, 0.2);
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
+            border-color: #22c55e;
+        }
+
+        .person-card.parent {
+            width: 140px;
+        }
+
+        .person-card.dad {
+            border: 2px solid #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .person-card.dad:hover {
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .person-card.mom {
+            border: 2px solid #f472b6;
+            background: rgba(244, 114, 182, 0.1);
+        }
+
+        .person-card.mom:hover {
+            box-shadow: 0 10px 30px rgba(244, 114, 182, 0.3);
+        }
+
+        .person-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .person-card.dad .person-avatar {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .person-card.mom .person-avatar {
+            background: linear-gradient(135deg, #f472b6, #db2777);
+        }
+
+        .person-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        .person-role {
+            font-size: 0.75rem;
+            color: #86efac;
+            margin-top: 5px;
+        }
+
+        /* Модальное окно - профиль человека */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #0a1a0a, #0d2818);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: #4ade80;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #22c55e;
+        }
+
+        .modal-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4);
+        }
+
+        .modal-name {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #4ade80;
+        }
+
+        .modal-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: rgba(34, 197, 94, 0.08);
+            border-radius: 10px;
+            border: 1px solid rgba(34, 197, 94, 0.1);
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .modal-info-label {
+            color: #86efac;
+        }
+
+        .modal-info-value {
+            color: #fff;
+            text-align: right;
+        }
+
+        .modal-link {
+            color: #4ade80;
+            text-decoration: none;
+        }
+
+        .modal-link:hover {
+            text-decoration: underline;
+            color: #22c55e;
+        }
+
+        .modal-family-links {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .modal-family-links h4 {
+            margin-bottom: 10px;
+            color: #86efac;
+        }
+
+        .group-link {
+            display: inline-block;
+            padding: 8px 15px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 15px;
+            margin: 3px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #4ade80;
+        }
+
+        .group-link:hover {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: #22c55e;
+        }
+
+        .parent-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 15px;
+            margin: 3px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #4ade80;
+        }
+
+        .parent-link:hover {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: #22c55e;
+        }
+
+        .parent-link .parent-name {
+            font-weight: 500;
+        }
+
+        .parent-link .parent-group {
+            font-size: 0.8rem;
+            color: #86efac;
+        }
+
+        /* Модальное окно - информация о группе */
+        .group-modal {
+            background: linear-gradient(135deg, #0a1a0a, #0d2818);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .group-modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .group-modal-title {
+            font-size: 1.5rem;
+            color: #4ade80;
+            margin-bottom: 5px;
+        }
+
+        .group-modal-subtitle {
+            color: #86efac;
+        }
+
+        .group-modal-section {
+            margin-bottom: 20px;
+        }
+
+        .group-modal-section h4 {
+            color: #86efac;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .group-person-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .group-person {
+            padding: 8px 15px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #fff;
+        }
+
+        .group-person:hover {
+            background: rgba(34, 197, 94, 0.25);
+            border-color: #22c55e;
+        }
+
+        .group-person.curator-dad {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .group-person.curator-mom {
+            border-color: #f472b6;
+            background: rgba(244, 114, 182, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86efac;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #f87171;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a1a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #16a34a;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>🌳 Семейное древо отряда</h1>
+        <p>21 год истории</p>
+    </header>
+
+    <!-- Статистика -->
+    <div class="stats-panel" id="statsPanel" style="display: none;">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number" id="statPeople">0</div>
+                <div class="stat-label">Человек</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statYears">0</div>
+                <div class="stat-label">Лет истории</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statCurators">0</div>
+                <div class="stat-label">Кураторов</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="statGroups">0</div>
+                <div class="stat-label">Групп</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters" id="filtersPanel" style="display: none;">
+        <button class="filter-btn active" data-filter="all">Всё древо</button>
+        <select class="filter-btn" id="yearFilter">
+            <option value="">Выбрать год</option>
+        </select>
+        <select class="filter-btn" id="groupFilter">
+            <option value="">Выбрать группу</option>
+        </select>
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍 Поиск по имени...">
+    </div>
+
+    <div class="tree-container" id="treeContainer">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <h3>Загрузка данных...</h3>
+        </div>
+    </div>
+
+    <!-- Модальное окно профиля -->
+    <div class="modal-overlay" id="personModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePersonModal()">&times;</button>
+            <div class="modal-avatar" id="modalAvatar">👤</div>
+            <h2 class="modal-name" id="modalName"></h2>
+            <div class="modal-info" id="modalInfo"></div>
+            <div class="modal-family-links" id="modalFamily"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно группы -->
+    <div class="modal-overlay" id="groupModal">
+        <div class="group-modal">
+            <button class="modal-close" onclick="closeGroupModal()">&times;</button>
+            <div class="group-modal-header">
+                <h2 class="group-modal-title" id="groupModalTitle"></h2>
+                <p class="group-modal-subtitle" id="groupModalSubtitle"></p>
+            </div>
+            <div id="groupModalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== БАЗА ДАННЫХ =====
+        let people = [];
+
+        // ===== ПУТЬ К ФАЙЛУ ДАННЫХ =====
+        const DATA_FILE = 'data.txt';
+
+        // ===== ПАРСЕР ДАННЫХ =====
+        
+        function parseExcelDate(excelDateStr) {
+            if (!excelDateStr || !excelDateStr.startsWith('д')) return null;
+            const excelDate = parseInt(excelDateStr.substring(1));
+            if (isNaN(excelDate)) return null;
+            const date = new Date((excelDate - 25569) * 86400 * 1000);
+            return date.toISOString().split('T')[0];
+        }
+
+        function parsePhone(phoneStr) {
+            if (!phoneStr || !phoneStr.startsWith('н')) return '';
+            return phoneStr.substring(1);
+        }
+
+        function parseVK(vkStr) {
+            if (!vkStr || !vkStr.startsWith('в')) return '';
+            return vkStr.substring(1);
+        }
+
+        function parseHistory(historyStr) {
+            if (!historyStr || !historyStr.startsWith('ш')) {
+                return { studyYear: null, studyGroup: null, curatorHistory: [] };
+            }
+            
+            const historyCode = historyStr.substring(1);
+            const chunks = [];
+            
+            for (let i = 0; i < historyCode.length; i += 4) {
+                const chunk = historyCode.substring(i, i + 4);
+                if (chunk.length === 4) {
+                    chunks.push(chunk);
+                }
+            }
+            
+            let studyYear = null;
+            let studyGroup = null;
+            const curatorHistory = [];
+            
+            chunks.forEach(chunk => {
+                const year = 2000 + parseInt(chunk.substring(0, 2));
+                const group = parseInt(chunk[2]);
+                const role = parseInt(chunk[3]);
+                
+                if (role === 1) {
+                    studyYear = year;
+                    studyGroup = group;
+                } else if (role === 2 || role === 3) {
+                    curatorHistory.push({ 
+                        year, 
+                        group, 
+                        role: role === 2 ? 'dad' : 'mom' 
+                    });
+                }
+            });
+            
+            return { studyYear, studyGroup, curatorHistory };
+        }
+
+        function parseFileData(text) {
+            const lines = text.trim().split('\n');
+            const parsed = [];
+            
+            lines.forEach((line, index) => {
+                if (!line.trim()) return;
+                if (line.includes('Фамилия') && line.includes('Имя')) return;
+                
+                const parts = line.split('|');
+                if (parts.length < 3) return;
+                
+                const [lastName, firstName, middleName, birthday, phone, vk, history] = parts;
+                const parsedHistory = parseHistory(history?.trim());
+                
+                parsed.push({
+                    id: index + 1,
+                    name: `${lastName || ''} ${firstName || ''} ${middleName || ''}`.trim(),
+                    lastName: (lastName || '').trim(),
+                    firstName: (firstName || '').trim(),
+                    middleName: (middleName || '').trim(),
+                    phone: parsePhone(phone?.trim()),
+                    birthday: parseExcelDate(birthday?.trim()),
+                    vk: parseVK(vk?.trim()),
+                    studyYear: parsedHistory.studyYear,
+                    studyGroup: parsedHistory.studyGroup,
+                    curatorHistory: parsedHistory.curatorHistory
+                });
+            });
+            
+            return parsed;
+        }
+
+        // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+        
+        function getInitials(name) {
+            return name.split(' ').filter(n => n).map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+
+        function findCurators(year, group) {
+            return people.filter(person => 
+                person.curatorHistory.some(c => c.year === year && c.group === group)
+            );
+        }
+
+        function findChildren(year, group) {
+            return people.filter(person => 
+                person.studyYear === year && person.studyGroup === group
+            );
+        }
+
+        function findParents(person) {
+            if (!person.studyYear || !person.studyGroup) return [];
+            return findCurators(person.studyYear, person.studyGroup);
+        }
+
+        function getCuratorRole(person, year, group) {
+            const entry = person.curatorHistory.find(c => c.year === year && c.group === group);
+            return entry ? entry.role : 'dad';
+        }
+
+        function getAllYears() {
+            const years = new Set();
+            people.forEach(p => {
+                if (p.studyYear) years.add(p.studyYear);
+                p.curatorHistory.forEach(c => years.add(c.year));
+            });
+            return Array.from(years).sort((a, b) => a - b);
+        }
+
+        function getAllGroups() {
+            const groups = new Set();
+            people.forEach(p => {
+                if (p.studyGroup) groups.add(p.studyGroup);
+                p.curatorHistory.forEach(c => groups.add(c.group));
+            });
+            return Array.from(groups).sort((a, b) => a - b);
+        }
+
+        // Подсчёт уникальных комбинаций год+группа
+        function countUniqueYearGroups() {
+            const combinations = new Set();
+            people.forEach(p => {
+                if (p.studyYear && p.studyGroup) {
+                    combinations.add(`${p.studyYear}-${p.studyGroup}`);
+                }
+                p.curatorHistory.forEach(c => {
+                    combinations.add(`${c.year}-${c.group}`);
+                });
+            });
+            return combinations.size;
+        }
+
+        // ===== ОТРИСОВКА =====
+
+        function createPersonCard(person, role = '') {
+            const card = document.createElement('div');
+            card.className = `person-card ${role}`;
+            card.dataset.personId = person.id;
+            
+            const shortName = `${person.lastName} ${person.firstName}`.trim() || person.name;
+            
+            card.innerHTML = `
+                <div class="person-avatar">${getInitials(person.name)}</div>
+                <div class="person-name">${shortName}</div>
+                ${role ? `<div class="person-role">${role === 'dad' ? 'Папа' : 'Мама'}</div>` : ''}
+            `;
+            
+            card.addEventListener('click', () => showPersonModal(person));
+            return card;
+        }
+
+        function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
+            const container = document.getElementById('treeContainer');
+            container.innerHTML = '';
+
+            if (people.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📭 Данные не загружены</h3>
+                        <p>Проверьте наличие файла data.txt</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const years = getAllYears();
+            let hasContent = false;
+            
+            years.forEach(year => {
+                if (filterYear && year !== parseInt(filterYear)) return;
+
+                const groups = getAllGroups();
+                let yearHasContent = false;
+
+                const yearBlock = document.createElement('div');
+                yearBlock.className = 'year-block';
+                yearBlock.innerHTML = `<h2 class="year-title">📅 ${year} год</h2>`;
+
+                groups.forEach(group => {
+                    if (filterGroup && group !== parseInt(filterGroup)) return;
+
+                    let curators = findCurators(year, group);
+                    let children = findChildren(year, group);
+
+                    if (searchQuery) {
+                        const query = searchQuery.toLowerCase();
+                        curators = curators.filter(p => p.name.toLowerCase().includes(query));
+                        children = children.filter(p => p.name.toLowerCase().includes(query));
+                    }
+
+                    if (curators.length === 0 && children.length === 0) return;
+
+                    yearHasContent = true;
+                    hasContent = true;
+
+                    const groupBlock = document.createElement('div');
+                    groupBlock.className = 'group-block';
+                    groupBlock.innerHTML = `<h3 class="group-title">Группа ${group}</h3>`;
+
+                    const family = document.createElement('div');
+                    family.className = 'family';
+
+                    if (curators.length > 0) {
+                        const parents = document.createElement('div');
+                        parents.className = 'parents';
+                        
+                        curators.forEach(curator => {
+                            const role = getCuratorRole(curator, year, group);
+                            parents.appendChild(createPersonCard(curator, role));
+                        });
+                        
+                        family.appendChild(parents);
+                    }
+
+                    if (children.length > 0) {
+                        const childrenDiv = document.createElement('div');
+                        childrenDiv.className = 'children';
+                        
+                        children.forEach(child => {
+                            childrenDiv.appendChild(createPersonCard(child));
+                        });
+                        
+                        family.appendChild(childrenDiv);
+                    }
+
+                    groupBlock.appendChild(family);
+                    yearBlock.appendChild(groupBlock);
+                });
+
+                if (yearHasContent) {
+                    container.appendChild(yearBlock);
+                }
+            });
+
+            if (!hasContent) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔍 Ничего не найдено</h3>
+                        <p>Попробуй изменить параметры поиска</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateFilters() {
+            const yearFilter = document.getElementById('yearFilter');
+            const groupFilter = document.getElementById('groupFilter');
+            
+            yearFilter.innerHTML = '<option value="">Выбрать год</option>';
+            groupFilter.innerHTML = '<option value="">Выбрать группу</option>';
+            
+            getAllYears().forEach(year => {
+                yearFilter.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+
+            getAllGroups().forEach(group => {
+                groupFilter.innerHTML += `<option value="${group}">Группа ${group}</option>`;
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('statPeople').textContent = people.length;
+            document.getElementById('statYears').textContent = getAllYears().length;
+            document.getElementById('statCurators').textContent = people.filter(p => p.curatorHistory.length > 0).length;
+            document.getElementById('statGroups').textContent = countUniqueYearGroups();
+        }
+
+        // ===== МОДАЛЬНОЕ ОКНО ПРОФИЛЯ =====
+
+        function showPersonModal(person) {
+            const modal = document.getElementById('personModal');
+            const avatar = document.getElementById('modalAvatar');
+            const name = document.getElementById('modalName');
+            const info = document.getElementById('modalInfo');
+            const family = document.getElementById('modalFamily');
+
+            avatar.textContent = getInitials(person.name);
+            name.textContent = person.name;
+
+            let birthdayStr = '—';
+            if (person.birthday) {
+                const birthday = new Date(person.birthday);
+                birthdayStr = birthday.toLocaleDateString('ru-RU', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+
+            info.innerHTML = `
+                <div class="modal-info-row">
+                    <span class="modal-info-label">📅 Дата рождения</span>
+                    <span class="modal-info-value">${birthdayStr}</span>
+                </div>
+                <div class="modal-info-row">
+                    <span class="modal-info-label">📞 Телефон</span>
+                    <span class="modal-info-value">${person.phone || '—'}</span>
+                </div>
+                <div class="modal-info-row">
+                    <span class="modal-info-label">💬 ВКонтакте</span>
+                    ${person.vk 
+                        ? `<a href="${person.vk}" target="_blank" class="modal-link">Открыть профиль</a>`
+                        : '<span class="modal-info-value">—</span>'
+                    }
+                </div>
+                ${person.studyYear ? `
+                <div class="modal-info-row">
+                    <span class="modal-info-label">📚 Обучение</span>
+                    <span class="modal-info-value">${person.studyYear} год, группа ${person.studyGroup}</span>
+                </div>
+                ` : ''}
+                ${person.curatorHistory.length > 0 ? `
+                <div class="modal-info-row">
+                    <span class="modal-info-label">👨‍👩‍👧 Был куратором</span>
+                    <span class="modal-info-value">${person.curatorHistory.map(c => 
+                        `${c.year} г. (гр. ${c.group})`
+                    ).join(', ')}</span>
+                </div>
+                ` : ''}
+            `;
+
+            // Родители
+            const parents = findParents(person);
+            
+            let familyHTML = '';
+
+            if (parents.length > 0) {
+                familyHTML += `<h4>👨‍👩‍👧 Родители:</h4>`;
+                parents.forEach(p => {
+                    const shortName = `${p.lastName} ${p.firstName}`.trim() || p.name;
+                    const hasStudyInfo = p.studyYear && p.studyGroup;
+                    
+                    if (hasStudyInfo) {
+                        familyHTML += `
+                            <div class="parent-link" data-person-id="${p.id}" onclick="showParentGroup(${p.id})">
+                                <span class="parent-name">${shortName}</span>
+                                <span class="parent-group">(${p.studyYear} г., гр. ${p.studyGroup})</span>
+                            </div>
+                        `;
+                    } else {
+                        familyHTML += `
+                            <div class="parent-link" onclick="showPersonById(${p.id})">
+                                <span class="parent-name">${shortName}</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            // Дети — показываем как группы
+            if (person.curatorHistory.length > 0) {
+                familyHTML += `<h4 style="margin-top: 15px;">👶 Курировал группы:</h4>`;
+                person.curatorHistory.forEach(c => {
+                    familyHTML += `
+                        <span class="group-link" onclick="showGroupModal(${c.year}, ${c.group})">
+                            ${c.year} год, группа ${c.group}
+                        </span>
+                    `;
+                });
+            }
+
+            if (!familyHTML) {
+                familyHTML = '<p style="color: #666; margin-top: 10px;">Нет связей в базе данных</p>';
+            }
+
+            family.innerHTML = familyHTML;
+            modal.classList.add('active');
+        }
+
+        function closePersonModal() {
+            document.getElementById('personModal').classList.remove('active');
+        }
+
+        function showPersonById(id) {
+            const person = people.find(p => p.id === id);
+            if (person) {
+                showPersonModal(person);
+            }
+        }
+
+        function showParentGroup(parentId) {
+            const parent = people.find(p => p.id === parentId);
+            if (parent && parent.studyYear && parent.studyGroup) {
+                closePersonModal();
+                showGroupModal(parent.studyYear, parent.studyGroup);
+            }
+        }
+
+        // ===== МОДАЛЬНОЕ ОКНО ГРУППЫ =====
+
+        function showGroupModal(year, group) {
+            const modal = document.getElementById('groupModal');
+            const title = document.getElementById('groupModalTitle');
+            const subtitle = document.getElementById('groupModalSubtitle');
+            const content = document.getElementById('groupModalContent');
+
+            title.textContent = `Группа ${group}`;
+            subtitle.textContent = `${year} год обучения`;
+
+            const curators = findCurators(year, group);
+            const children = findChildren(year, group);
+
+            let contentHTML = '';
+
+            if (curators.length > 0) {
+                contentHTML += `
+                    <div class="group-modal-section">
+                        <h4>👨‍👩‍👧 Кураторы</h4>
+                        <div class="group-person-list">
+                `;
+                curators.forEach(curator => {
+                    const role = getCuratorRole(curator, year, group);
+                    const shortName = `${curator.lastName} ${curator.firstName}`.trim();
+                    contentHTML += `
+                        <div class="group-person curator-${role}" onclick="closeGroupModal(); showPersonById(${curator.id})">
+                            ${shortName} (${role === 'dad' ? 'Папа' : 'Мама'})
+                        </div>
+                    `;
+                });
+                contentHTML += `</div></div>`;
+            }
+
+            if (children.length > 0) {
+                contentHTML += `
+                    <div class="group-modal-section">
+                        <h4>👥 Кандидаты (${children.length} чел.)</h4>
+                        <div class="group-person-list">
+                `;
+                children.forEach(child => {
+                    const shortName = `${child.lastName} ${child.firstName}`.trim();
+                    contentHTML += `
+                        <div class="group-person" onclick="closeGroupModal(); showPersonById(${child.id})">
+                            ${shortName}
+                        </div>
+                    `;
+                });
+                contentHTML += `</div></div>`;
+            }
+
+            if (!curators.length && !children.length) {
+                contentHTML = '<p style="color: #666; text-align: center;">Нет данных об этой группе</p>';
+            }
+
+            content.innerHTML = contentHTML;
+            modal.classList.add('active');
+        }
+
+        function closeGroupModal() {
+            document.getElementById('groupModal').classList.remove('active');
+        }
+
+        // ===== ЗАГРУЗКА ДАННЫХ =====
+
+        async function loadData() {
+            try {
+                const response = await fetch(DATA_FILE);
+                
+                if (!response.ok) {
+                    throw new Error(`Файл не найден: ${DATA_FILE}`);
+                }
+                
+                const text = await response.text();
+                people = parseFileData(text);
+                people.forEach((p, i) => p.id = i + 1);
+                
+                // Показываем интерфейс
+                document.getElementById('statsPanel').style.display = 'block';
+                document.getElementById('filtersPanel').style.display = 'flex';
+                
+                updateFilters();
+                updateStats();
+                renderTree();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                document.getElementById('treeContainer').innerHTML = `
+                    <div class="error-state">
+                        <h3>❌ Ошибка загрузки</h3>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 10px; color: #86efac;">
+                            Убедитесь, что файл data.txt находится в той же папке, что и index.html
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const yearFilter = document.getElementById('yearFilter');
+            const groupFilter = document.getElementById('groupFilter');
+            const searchBox = document.getElementById('searchBox');
+
+            // Загружаем данные
+            loadData();
+
+            // Фильтры
+            document.querySelector('[data-filter="all"]').addEventListener('click', () => {
+                yearFilter.value = '';
+                groupFilter.value = '';
+                searchBox.value = '';
+                renderTree();
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('[data-filter="all"]').classList.add('active');
+            });
+
+            yearFilter.addEventListener('change', () => {
+                renderTree(yearFilter.value, groupFilter.value, searchBox.value);
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+            });
+
+            groupFilter.addEventListener('change', () => {
+                renderTree(yearFilter.value, groupFilter.value, searchBox.value);
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+            });
+
+            // Поиск
+            let searchTimeout;
+            searchBox.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    renderTree(yearFilter.value, groupFilter.value, searchBox.value);
+                    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                }, 300);
+            });
+
+            // Закрытие модалок по клику вне
+            document.getElementById('personModal').addEventListener('click', (e) => {
+                if (e.target.id === 'personModal') closePersonModal();
+            });
+
+            document.getElementById('groupModal').addEventListener('click', (e) => {
+                if (e.target.id === 'groupModal') closeGroupModal();
+            });
+
+            // Закрытие по Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closePersonModal();
+                    closeGroupModal();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
