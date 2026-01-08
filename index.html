@@ -36,7 +36,6 @@
             color: #86efac;
         }
 
-        /* Загрузка */
         .loading {
             text-align: center;
             padding: 60px 20px;
@@ -57,7 +56,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Статистика */
         .stats-panel {
             background: rgba(34, 197, 94, 0.1);
             border: 1px solid rgba(34, 197, 94, 0.2);
@@ -91,7 +89,138 @@
             margin-top: 5px;
         }
 
-        /* Фильтры */
+        /* Панель поиска связей */
+        .connection-panel {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 15px;
+            margin: 0 20px 20px;
+            padding: 20px;
+        }
+
+        .connection-panel h3 {
+            color: #4ade80;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .connection-selects {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .connection-select {
+            padding: 10px 15px;
+            border: 2px solid #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .connection-select option {
+            background: #0d2818;
+            color: #fff;
+        }
+
+        .connection-arrow {
+            color: #4ade80;
+            font-size: 1.5rem;
+        }
+
+        .find-connection-btn {
+            padding: 12px 25px;
+            background: #22c55e;
+            border: none;
+            border-radius: 25px;
+            color: #0a1a0a;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .find-connection-btn:hover {
+            background: #16a34a;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+
+        .find-connection-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Результат поиска связи */
+        .connection-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .connection-result.show {
+            display: block;
+        }
+
+        .connection-path {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .connection-person {
+            padding: 10px 15px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .connection-person:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .connection-person.start {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .connection-person.end {
+            border-color: #f472b6;
+            background: rgba(244, 114, 182, 0.15);
+        }
+
+        .connection-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #86efac;
+            font-size: 0.8rem;
+        }
+
+        .connection-link-arrow {
+            font-size: 1.2rem;
+            color: #4ade80;
+        }
+
+        .connection-link-type {
+            font-size: 0.75rem;
+        }
+
+        .no-connection {
+            text-align: center;
+            color: #f87171;
+            padding: 20px;
+        }
+
         .filters {
             display: flex;
             justify-content: center;
@@ -146,7 +275,6 @@
             box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
         }
 
-        /* Контейнер дерева */
         .tree-container {
             padding: 40px 20px;
             overflow-x: auto;
@@ -262,6 +390,13 @@
             font-size: 1.2rem;
             font-weight: bold;
             color: #fff;
+            overflow: hidden;
+        }
+
+        .person-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .person-card.dad .person-avatar {
@@ -284,7 +419,6 @@
             margin-top: 5px;
         }
 
-        /* Модальное окно - профиль человека */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -329,17 +463,24 @@
         }
 
         .modal-avatar {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             background: linear-gradient(135deg, #22c55e, #16a34a);
             margin: 20px auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4);
+            overflow: hidden;
+        }
+
+        .modal-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .modal-name {
@@ -443,7 +584,6 @@
             color: #86efac;
         }
 
-        /* Модальное окно - информация о группе */
         .group-modal {
             background: linear-gradient(135deg, #0a1a0a, #0d2818);
             border-radius: 20px;
@@ -556,7 +696,6 @@
         <p>21 год истории</p>
     </header>
 
-    <!-- Статистика -->
     <div class="stats-panel" id="statsPanel" style="display: none;">
         <div class="stats-grid">
             <div class="stat-item">
@@ -578,6 +717,22 @@
         </div>
     </div>
 
+    <!-- Панель поиска связей -->
+    <div class="connection-panel" id="connectionPanel" style="display: none;">
+        <h3>🔗 Найти связь между людьми</h3>
+        <div class="connection-selects">
+            <select class="connection-select" id="person1Select">
+                <option value="">Выбери первого человека</option>
+            </select>
+            <span class="connection-arrow">↔</span>
+            <select class="connection-select" id="person2Select">
+                <option value="">Выбери второго человека</option>
+            </select>
+            <button class="find-connection-btn" id="findConnectionBtn" disabled>Найти связь</button>
+        </div>
+        <div class="connection-result" id="connectionResult"></div>
+    </div>
+
     <div class="filters" id="filtersPanel" style="display: none;">
         <button class="filter-btn active" data-filter="all">Всё древо</button>
         <select class="filter-btn" id="yearFilter">
@@ -596,7 +751,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно профиля -->
     <div class="modal-overlay" id="personModal">
         <div class="modal">
             <button class="modal-close" onclick="closePersonModal()">&times;</button>
@@ -607,7 +761,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно группы -->
     <div class="modal-overlay" id="groupModal">
         <div class="group-modal">
             <button class="modal-close" onclick="closeGroupModal()">&times;</button>
@@ -620,11 +773,13 @@
     </div>
 
     <script>
-        // ===== БАЗА ДАННЫХ =====
         let people = [];
-
-        // ===== ПУТЬ К ФАЙЛУ ДАННЫХ =====
         const DATA_FILE = 'data.txt';
+
+        // ===== ФОРМАТИРОВАНИЕ ГОДА =====
+        function formatYear(year) {
+            return `${year - 1}-${year}`;
+        }
 
         // ===== ПАРСЕР ДАННЫХ =====
         
@@ -644,6 +799,11 @@
         function parseVK(vkStr) {
             if (!vkStr || !vkStr.startsWith('в')) return '';
             return vkStr.substring(1);
+        }
+
+        function parsePhoto(photoStr) {
+            if (!photoStr || !photoStr.startsWith('ф')) return '';
+            return photoStr.substring(1);
         }
 
         function parseHistory(historyStr) {
@@ -696,7 +856,7 @@
                 const parts = line.split('|');
                 if (parts.length < 3) return;
                 
-                const [lastName, firstName, middleName, birthday, phone, vk, history] = parts;
+                const [lastName, firstName, middleName, birthday, phone, vk, history, photo] = parts;
                 const parsedHistory = parseHistory(history?.trim());
                 
                 parsed.push({
@@ -708,6 +868,7 @@
                     phone: parsePhone(phone?.trim()),
                     birthday: parseExcelDate(birthday?.trim()),
                     vk: parseVK(vk?.trim()),
+                    photo: parsePhoto(photo?.trim()),
                     studyYear: parsedHistory.studyYear,
                     studyGroup: parsedHistory.studyGroup,
                     curatorHistory: parsedHistory.curatorHistory
@@ -751,7 +912,7 @@
                 if (p.studyYear) years.add(p.studyYear);
                 p.curatorHistory.forEach(c => years.add(c.year));
             });
-            return Array.from(years).sort((a, b) => b - a); // Было a - b, стало b - a
+            return Array.from(years).sort((a, b) => b - a);
         }
 
         function getAllGroups() {
@@ -763,7 +924,6 @@
             return Array.from(groups).sort((a, b) => a - b);
         }
 
-        // Подсчёт уникальных комбинаций год+группа
         function countUniqueYearGroups() {
             const combinations = new Set();
             people.forEach(p => {
@@ -777,7 +937,135 @@
             return combinations.size;
         }
 
+        // ===== ПОИСК СВЯЗИ МЕЖДУ ЛЮДЬМИ =====
+
+        function getConnections(person) {
+            const connections = [];
+            
+            // Родители (кураторы когда учился)
+            const parents = findParents(person);
+            parents.forEach(p => {
+                connections.push({ person: p, type: 'parent' });
+            });
+            
+            // Дети (те кого курировал)
+            person.curatorHistory.forEach(c => {
+                const children = findChildren(c.year, c.group);
+                children.forEach(child => {
+                    connections.push({ person: child, type: 'child' });
+                });
+            });
+            
+            // Братья/сёстры (учились в одной группе)
+            if (person.studyYear && person.studyGroup) {
+                const siblings = findChildren(person.studyYear, person.studyGroup);
+                siblings.forEach(s => {
+                    if (s.id !== person.id) {
+                        connections.push({ person: s, type: 'sibling' });
+                    }
+                });
+            }
+            
+            return connections;
+        }
+
+        function findConnectionPath(person1Id, person2Id) {
+            if (person1Id === person2Id) return null;
+            
+            const person1 = people.find(p => p.id === person1Id);
+            const person2 = people.find(p => p.id === person2Id);
+            
+            if (!person1 || !person2) return null;
+            
+            // BFS для поиска кратчайшего пути
+            const queue = [{ person: person1, path: [{ person: person1, type: 'start' }] }];
+            const visited = new Set([person1.id]);
+            
+            while (queue.length > 0) {
+                const { person, path } = queue.shift();
+                const connections = getConnections(person);
+                
+                for (const conn of connections) {
+                    if (conn.person.id === person2Id) {
+                        return [...path, { person: conn.person, type: conn.type }];
+                    }
+                    
+                    if (!visited.has(conn.person.id)) {
+                        visited.add(conn.person.id);
+                        queue.push({
+                            person: conn.person,
+                            path: [...path, { person: conn.person, type: conn.type }]
+                        });
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function getConnectionTypeLabel(type) {
+            switch (type) {
+                case 'parent': return '↑ родитель';
+                case 'child': return '↓ ребёнок';
+                case 'sibling': return '↔ одногруппник';
+                default: return '';
+            }
+        }
+
+        function renderConnectionPath(path) {
+            const container = document.getElementById('connectionResult');
+            
+            if (!path) {
+                container.innerHTML = `
+                    <div class="no-connection">
+                        😔 Связь между этими людьми не найдена
+                    </div>
+                `;
+                container.classList.add('show');
+                return;
+            }
+            
+            let html = '<div class="connection-path">';
+            
+            path.forEach((step, index) => {
+                const shortName = `${step.person.lastName} ${step.person.firstName}`.trim();
+                const isStart = index === 0;
+                const isEnd = index === path.length - 1;
+                
+                if (index > 0) {
+                    html += `
+                        <div class="connection-link">
+                            <span class="connection-link-arrow">→</span>
+                            <span class="connection-link-type">${getConnectionTypeLabel(step.type)}</span>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div class="connection-person ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''}" 
+                         onclick="showPersonById(${step.person.id})">
+                        ${shortName}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            html += `<p style="text-align: center; margin-top: 15px; color: #86efac;">
+                Найдена связь через ${path.length - 1} ${path.length - 1 === 1 ? 'шаг' : 'шага'}
+            </p>`;
+            
+            container.innerHTML = html;
+            container.classList.add('show');
+        }
+
         // ===== ОТРИСОВКА =====
+
+        function createAvatarContent(person) {
+            if (person.photo) {
+                return `<img src="${person.photo}" alt="${person.name}" onerror="this.parentElement.innerHTML='${getInitials(person.name)}'">`;
+            }
+            return getInitials(person.name);
+        }
 
         function createPersonCard(person, role = '') {
             const card = document.createElement('div');
@@ -787,7 +1075,7 @@
             const shortName = `${person.lastName} ${person.firstName}`.trim() || person.name;
             
             card.innerHTML = `
-                <div class="person-avatar">${getInitials(person.name)}</div>
+                <div class="person-avatar">${createAvatarContent(person)}</div>
                 <div class="person-name">${shortName}</div>
                 ${role ? `<div class="person-role">${role === 'dad' ? 'Папа' : 'Мама'}</div>` : ''}
             `;
@@ -821,7 +1109,7 @@
 
                 const yearBlock = document.createElement('div');
                 yearBlock.className = 'year-block';
-                yearBlock.innerHTML = `<h2 class="year-title">📅 ${year} год</h2>`;
+                yearBlock.innerHTML = `<h2 class="year-title">📅 ${formatYear(year)}</h2>`;
 
                 groups.forEach(group => {
                     if (filterGroup && group !== parseInt(filterGroup)) return;
@@ -897,12 +1185,28 @@
             groupFilter.innerHTML = '<option value="">Выбрать группу</option>';
             
             getAllYears().forEach(year => {
-                yearFilter.innerHTML += `<option value="${year}">${year}</option>`;
+                yearFilter.innerHTML += `<option value="${year}">${formatYear(year)}</option>`;
             });
 
             getAllGroups().forEach(group => {
                 groupFilter.innerHTML += `<option value="${group}">Группа ${group}</option>`;
             });
+        }
+
+        function updateConnectionSelects() {
+            const select1 = document.getElementById('person1Select');
+            const select2 = document.getElementById('person2Select');
+            
+            const sortedPeople = [...people].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+            
+            let options = '<option value="">Выбери человека</option>';
+            sortedPeople.forEach(p => {
+                const shortName = `${p.lastName} ${p.firstName}`.trim();
+                options += `<option value="${p.id}">${shortName}</option>`;
+            });
+            
+            select1.innerHTML = options;
+            select2.innerHTML = options;
         }
 
         function updateStats() {
@@ -921,7 +1225,7 @@
             const info = document.getElementById('modalInfo');
             const family = document.getElementById('modalFamily');
 
-            avatar.textContent = getInitials(person.name);
+            avatar.innerHTML = createAvatarContent(person);
             name.textContent = person.name;
 
             let birthdayStr = '—';
@@ -953,20 +1257,19 @@
                 ${person.studyYear ? `
                 <div class="modal-info-row">
                     <span class="modal-info-label">📚 Обучение</span>
-                    <span class="modal-info-value">${person.studyYear} год, группа ${person.studyGroup}</span>
+                    <span class="modal-info-value">${formatYear(person.studyYear)}, группа ${person.studyGroup}</span>
                 </div>
                 ` : ''}
                 ${person.curatorHistory.length > 0 ? `
                 <div class="modal-info-row">
                     <span class="modal-info-label">👨‍👩‍👧 Был куратором</span>
                     <span class="modal-info-value">${person.curatorHistory.map(c => 
-                        `${c.year} г. (гр. ${c.group})`
+                        `${formatYear(c.year)} (гр. ${c.group})`
                     ).join(', ')}</span>
                 </div>
                 ` : ''}
             `;
 
-            // Родители
             const parents = findParents(person);
             
             let familyHTML = '';
@@ -979,9 +1282,9 @@
                     
                     if (hasStudyInfo) {
                         familyHTML += `
-                            <div class="parent-link" data-person-id="${p.id}" onclick="showParentGroup(${p.id})">
+                            <div class="parent-link" onclick="showParentGroup(${p.id})">
                                 <span class="parent-name">${shortName}</span>
-                                <span class="parent-group">(${p.studyYear} г., гр. ${p.studyGroup})</span>
+                                <span class="parent-group">(${formatYear(p.studyYear)}, гр. ${p.studyGroup})</span>
                             </div>
                         `;
                     } else {
@@ -994,13 +1297,12 @@
                 });
             }
 
-            // Дети — показываем как группы
             if (person.curatorHistory.length > 0) {
                 familyHTML += `<h4 style="margin-top: 15px;">👶 Курировал группы:</h4>`;
                 person.curatorHistory.forEach(c => {
                     familyHTML += `
                         <span class="group-link" onclick="showGroupModal(${c.year}, ${c.group})">
-                            ${c.year} год, группа ${c.group}
+                            ${formatYear(c.year)}, группа ${c.group}
                         </span>
                     `;
                 });
@@ -1042,7 +1344,7 @@
             const content = document.getElementById('groupModalContent');
 
             title.textContent = `Группа ${group}`;
-            subtitle.textContent = `${year} год обучения`;
+            subtitle.textContent = `${formatYear(year)} учебный год`;
 
             const curators = findCurators(year, group);
             const children = findChildren(year, group);
@@ -1110,11 +1412,12 @@
                 people = parseFileData(text);
                 people.forEach((p, i) => p.id = i + 1);
                 
-                // Показываем интерфейс
                 document.getElementById('statsPanel').style.display = 'block';
+                document.getElementById('connectionPanel').style.display = 'block';
                 document.getElementById('filtersPanel').style.display = 'flex';
                 
                 updateFilters();
+                updateConnectionSelects();
                 updateStats();
                 renderTree();
                 
@@ -1138,9 +1441,26 @@
             const yearFilter = document.getElementById('yearFilter');
             const groupFilter = document.getElementById('groupFilter');
             const searchBox = document.getElementById('searchBox');
+            const person1Select = document.getElementById('person1Select');
+            const person2Select = document.getElementById('person2Select');
+            const findConnectionBtn = document.getElementById('findConnectionBtn');
 
-            // Загружаем данные
             loadData();
+
+            // Поиск связей
+            function updateFindButton() {
+                findConnectionBtn.disabled = !person1Select.value || !person2Select.value;
+            }
+
+            person1Select.addEventListener('change', updateFindButton);
+            person2Select.addEventListener('change', updateFindButton);
+
+            findConnectionBtn.addEventListener('click', () => {
+                const id1 = parseInt(person1Select.value);
+                const id2 = parseInt(person2Select.value);
+                const path = findConnectionPath(id1, id2);
+                renderConnectionPath(path);
+            });
 
             // Фильтры
             document.querySelector('[data-filter="all"]').addEventListener('click', () => {
@@ -1162,7 +1482,6 @@
                 document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
             });
 
-            // Поиск
             let searchTimeout;
             searchBox.addEventListener('input', () => {
                 clearTimeout(searchTimeout);
@@ -1172,7 +1491,6 @@
                 }, 300);
             });
 
-            // Закрытие модалок по клику вне
             document.getElementById('personModal').addEventListener('click', (e) => {
                 if (e.target.id === 'personModal') closePersonModal();
             });
@@ -1181,7 +1499,6 @@
                 if (e.target.id === 'groupModal') closeGroupModal();
             });
 
-            // Закрытие по Escape
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     closePersonModal();
