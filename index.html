@@ -154,12 +154,9 @@
             cursor: not-allowed;
         }
 
-        /* Результат поиска связи */
+        /* Результат поиска связи - пирамида */
         .connection-result {
             margin-top: 20px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
             display: none;
         }
 
@@ -167,58 +164,200 @@
             display: block;
         }
 
-        .connection-path {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
+        .connection-info {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
 
-        .connection-person {
-            padding: 10px 15px;
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.3);
+        .connection-info h4 {
+            color: #4ade80;
+            margin-bottom: 5px;
+        }
+
+        .connection-info p {
+            color: #86efac;
+            font-size: 0.9rem;
+        }
+
+        /* Пирамида связей */
+        .pyramid-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .pyramid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: fit-content;
+        }
+
+        .pyramid-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pyramid-year {
+            color: #86efac;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            padding: 4px 12px;
+            background: rgba(34, 197, 94, 0.1);
             border-radius: 10px;
+        }
+
+        .pyramid-people {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .pyramid-person {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s;
+            min-width: 120px;
         }
 
-        .connection-person:hover {
-            background: rgba(34, 197, 94, 0.3);
+        .pyramid-person:hover {
+            background: rgba(34, 197, 94, 0.25);
+            transform: translateY(-3px);
         }
 
-        .connection-person.start {
+        .pyramid-person.ancestor {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.15);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .pyramid-person.person-start {
             border-color: #3b82f6;
             background: rgba(59, 130, 246, 0.15);
         }
 
-        .connection-person.end {
+        .pyramid-person.person-end {
             border-color: #f472b6;
             background: rgba(244, 114, 182, 0.15);
         }
 
-        .connection-link {
+        .pyramid-person-name {
+            font-weight: 500;
+            color: #fff;
+            text-align: center;
+        }
+
+        .pyramid-person-role {
+            font-size: 0.75rem;
+            color: #86efac;
+            margin-top: 4px;
+        }
+
+        /* Линии связи */
+        .pyramid-connector {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            height: 30px;
+            position: relative;
+        }
+
+        .connector-line {
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, #22c55e, #4ade80);
+        }
+
+        .connector-arrow {
+            color: #4ade80;
+            font-size: 1rem;
+        }
+
+        .connector-split {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            height: 30px;
+            position: relative;
+        }
+
+        .connector-split::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 15px;
+            background: #4ade80;
+        }
+
+        .connector-split::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            width: var(--split-width, 100px);
+            height: 2px;
+            background: #4ade80;
+        }
+
+        .connector-branch {
+            width: 2px;
+            height: 15px;
+            background: #4ade80;
+            position: absolute;
+            bottom: 0;
+        }
+
+        .connector-branch.left {
+            left: 0;
+        }
+
+        .connector-branch.right {
+            right: 0;
+        }
+
+        .pyramid-direction {
+            display: flex;
+            align-items: center;
+            gap: 5px;
             color: #86efac;
             font-size: 0.8rem;
+            padding: 5px 10px;
         }
 
-        .connection-link-arrow {
-            font-size: 1.2rem;
-            color: #4ade80;
+        .direction-up {
+            color: #f59e0b;
         }
 
-        .connection-link-type {
-            font-size: 0.75rem;
+        .direction-down {
+            color: #22c55e;
         }
 
         .no-connection {
             text-align: center;
             color: #f87171;
-            padding: 20px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .same-person {
+            text-align: center;
+            color: #f59e0b;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
         }
 
         .filters {
@@ -717,7 +856,6 @@
         </div>
     </div>
 
-    <!-- Панель поиска связей -->
     <div class="connection-panel" id="connectionPanel" style="display: none;">
         <h3>🔗 Найти связь между людьми</h3>
         <div class="connection-selects">
@@ -776,7 +914,6 @@
         let people = [];
         const DATA_FILE = 'data.txt';
 
-        // ===== ФОРМАТИРОВАНИЕ ГОДА =====
         function formatYear(year) {
             return `${year - 1}-${year}`;
         }
@@ -816,9 +953,7 @@
             
             for (let i = 0; i < historyCode.length; i += 4) {
                 const chunk = historyCode.substring(i, i + 4);
-                if (chunk.length === 4) {
-                    chunks.push(chunk);
-                }
+                if (chunk.length === 4) chunks.push(chunk);
             }
             
             let studyYear = null;
@@ -834,11 +969,7 @@
                     studyYear = year;
                     studyGroup = group;
                 } else if (role === 2 || role === 3) {
-                    curatorHistory.push({ 
-                        year, 
-                        group, 
-                        role: role === 2 ? 'dad' : 'mom' 
-                    });
+                    curatorHistory.push({ year, group, role: role === 2 ? 'dad' : 'mom' });
                 }
             });
             
@@ -884,6 +1015,10 @@
             return name.split(' ').filter(n => n).map(n => n[0]).join('').substring(0, 2).toUpperCase();
         }
 
+        function getShortName(person) {
+            return `${person.lastName} ${person.firstName}`.trim() || person.name;
+        }
+
         function findCurators(year, group) {
             return people.filter(person => 
                 person.curatorHistory.some(c => c.year === year && c.group === group)
@@ -901,9 +1036,22 @@
             return findCurators(person.studyYear, person.studyGroup);
         }
 
+        function findAllChildren(person) {
+            let children = [];
+            person.curatorHistory.forEach(c => {
+                children = children.concat(findChildren(c.year, c.group));
+            });
+            return children;
+        }
+
         function getCuratorRole(person, year, group) {
             const entry = person.curatorHistory.find(c => c.year === year && c.group === group);
             return entry ? entry.role : 'dad';
+        }
+
+        function getPersonYear(person) {
+            return person.studyYear || (person.curatorHistory.length > 0 ? 
+                Math.min(...person.curatorHistory.map(c => c.year)) : null);
         }
 
         function getAllYears() {
@@ -937,123 +1085,265 @@
             return combinations.size;
         }
 
-        // ===== ПОИСК СВЯЗИ МЕЖДУ ЛЮДЬМИ =====
+        // ===== ПОИСК СВЯЗИ ЧЕРЕЗ ОБЩЕГО ПРЕДКА =====
 
-        function getConnections(person) {
-            const connections = [];
+        // Получить всех предков (родителей, их родителей и т.д.)
+        function getAncestors(person, visited = new Set()) {
+            const ancestors = [];
+            if (visited.has(person.id)) return ancestors;
+            visited.add(person.id);
             
-            // Родители (кураторы когда учился)
             const parents = findParents(person);
-            parents.forEach(p => {
-                connections.push({ person: p, type: 'parent' });
-            });
-            
-            // Дети (те кого курировал)
-            person.curatorHistory.forEach(c => {
-                const children = findChildren(c.year, c.group);
-                children.forEach(child => {
-                    connections.push({ person: child, type: 'child' });
+            parents.forEach(parent => {
+                ancestors.push({ person: parent, depth: 1 });
+                const parentAncestors = getAncestors(parent, visited);
+                parentAncestors.forEach(a => {
+                    ancestors.push({ person: a.person, depth: a.depth + 1 });
                 });
             });
             
-            // Братья/сёстры (учились в одной группе)
-            if (person.studyYear && person.studyGroup) {
-                const siblings = findChildren(person.studyYear, person.studyGroup);
-                siblings.forEach(s => {
-                    if (s.id !== person.id) {
-                        connections.push({ person: s, type: 'sibling' });
-                    }
-                });
-            }
-            
-            return connections;
+            return ancestors;
         }
 
-        function findConnectionPath(person1Id, person2Id) {
-            if (person1Id === person2Id) return null;
+        // Получить путь до предка
+        function getPathToAncestor(person, ancestorId, visited = new Set()) {
+            if (person.id === ancestorId) return [person];
+            if (visited.has(person.id)) return null;
+            visited.add(person.id);
             
-            const person1 = people.find(p => p.id === person1Id);
-            const person2 = people.find(p => p.id === person2Id);
-            
-            if (!person1 || !person2) return null;
-            
-            // BFS для поиска кратчайшего пути
-            const queue = [{ person: person1, path: [{ person: person1, type: 'start' }] }];
-            const visited = new Set([person1.id]);
-            
-            while (queue.length > 0) {
-                const { person, path } = queue.shift();
-                const connections = getConnections(person);
-                
-                for (const conn of connections) {
-                    if (conn.person.id === person2Id) {
-                        return [...path, { person: conn.person, type: conn.type }];
-                    }
-                    
-                    if (!visited.has(conn.person.id)) {
-                        visited.add(conn.person.id);
-                        queue.push({
-                            person: conn.person,
-                            path: [...path, { person: conn.person, type: conn.type }]
-                        });
-                    }
+            const parents = findParents(person);
+            for (const parent of parents) {
+                const path = getPathToAncestor(parent, ancestorId, visited);
+                if (path) {
+                    return [person, ...path];
                 }
             }
             
             return null;
         }
 
-        function getConnectionTypeLabel(type) {
-            switch (type) {
-                case 'parent': return '↑ родитель';
-                case 'child': return '↓ ребёнок';
-                case 'sibling': return '↔ одногруппник';
-                default: return '';
+        // Получить путь от предка к потомку
+        function getPathFromAncestor(ancestorId, person, visited = new Set()) {
+            const path = getPathToAncestor(person, ancestorId, new Set());
+            if (path) {
+                return path.reverse();
             }
+            return null;
         }
 
-        function renderConnectionPath(path) {
+        // Найти общего предка и построить путь
+        function findConnectionThroughAncestor(person1Id, person2Id) {
+            if (person1Id === person2Id) return { type: 'same' };
+            
+            const person1 = people.find(p => p.id === person1Id);
+            const person2 = people.find(p => p.id === person2Id);
+            
+            if (!person1 || !person2) return null;
+
+            // Проверяем прямую связь родитель-ребёнок
+            const parents1 = findParents(person1);
+            if (parents1.some(p => p.id === person2Id)) {
+                return {
+                    type: 'direct',
+                    ancestor: person2,
+                    pathUp: [person1],
+                    pathDown: []
+                };
+            }
+
+            const parents2 = findParents(person2);
+            if (parents2.some(p => p.id === person1Id)) {
+                return {
+                    type: 'direct',
+                    ancestor: person1,
+                    pathUp: [],
+                    pathDown: [person2]
+                };
+            }
+
+            // Получаем всех предков обоих людей
+            const ancestors1 = getAncestors(person1);
+            const ancestors2 = getAncestors(person2);
+            
+            // Добавляем самих людей как возможных "предков" друг для друга
+            ancestors1.unshift({ person: person1, depth: 0 });
+            ancestors2.unshift({ person: person2, depth: 0 });
+
+            // Ищем общего предка
+            let commonAncestor = null;
+            let minTotalDepth = Infinity;
+
+            for (const a1 of ancestors1) {
+                for (const a2 of ancestors2) {
+                    if (a1.person.id === a2.person.id) {
+                        const totalDepth = a1.depth + a2.depth;
+                        if (totalDepth < minTotalDepth) {
+                            minTotalDepth = totalDepth;
+                            commonAncestor = a1.person;
+                        }
+                    }
+                }
+            }
+
+            if (!commonAncestor) return null;
+
+            // Строим путь вверх от person1 до общего предка
+            const pathUp = getPathToAncestor(person1, commonAncestor.id, new Set()) || [person1];
+            
+            // Строим путь вниз от общего предка до person2
+            const pathDown = getPathFromAncestor(commonAncestor.id, person2, new Set()) || [person2];
+
+            return {
+                type: 'ancestor',
+                ancestor: commonAncestor,
+                pathUp: pathUp,
+                pathDown: pathDown.slice(1) // Убираем общего предка, чтобы не дублировать
+            };
+        }
+
+        // Визуализация пирамиды
+        function renderPyramid(connection) {
             const container = document.getElementById('connectionResult');
             
-            if (!path) {
+            if (!connection) {
                 container.innerHTML = `
                     <div class="no-connection">
-                        😔 Связь между этими людьми не найдена
+                        <h4>😔 Связь не найдена</h4>
+                        <p>Эти люди не связаны через кураторов</p>
                     </div>
                 `;
                 container.classList.add('show');
                 return;
             }
+
+            if (connection.type === 'same') {
+                container.innerHTML = `
+                    <div class="same-person">
+                        <h4>🤔 Это один и тот же человек</h4>
+                    </div>
+                `;
+                container.classList.add('show');
+                return;
+            }
+
+            const { ancestor, pathUp, pathDown } = connection;
             
-            let html = '<div class="connection-path">';
+            // Собираем все шаги для пирамиды
+            const pyramidSteps = [];
             
-            path.forEach((step, index) => {
-                const shortName = `${step.person.lastName} ${step.person.firstName}`.trim();
-                const isStart = index === 0;
-                const isEnd = index === path.length - 1;
+            // Путь вверх (от person1 к предку)
+            pathUp.forEach((person, index) => {
+                const year = getPersonYear(person);
+                pyramidSteps.push({
+                    person,
+                    year,
+                    direction: index < pathUp.length - 1 ? 'up' : 'ancestor',
+                    isStart: index === 0,
+                    isAncestor: index === pathUp.length - 1
+                });
+            });
+
+            // Путь вниз (от предка к person2)
+            pathDown.forEach((person, index) => {
+                const year = getPersonYear(person);
+                pyramidSteps.push({
+                    person,
+                    year,
+                    direction: 'down',
+                    isEnd: index === pathDown.length - 1
+                });
+            });
+
+            // Группируем по годам
+            const yearGroups = new Map();
+            pyramidSteps.forEach(step => {
+                const year = step.year || 'Неизвестно';
+                if (!yearGroups.has(year)) {
+                    yearGroups.set(year, []);
+                }
+                yearGroups.get(year).push(step);
+            });
+
+            // Сортируем года от старого к новому (сверху вниз)
+            const sortedYears = Array.from(yearGroups.keys()).sort((a, b) => {
+                if (a === 'Неизвестно') return -1;
+                if (b === 'Неизвестно') return 1;
+                return a - b;
+            });
+
+            // Строим HTML
+            let html = `
+                <div class="connection-info">
+                    <h4>✨ Связь найдена!</h4>
+                    <p>Через общего предка: <strong>${getShortName(ancestor)}</strong></p>
+                    <p>Поколений вверх: ${pathUp.length - 1} | Поколений вниз: ${pathDown.length}</p>
+                </div>
+                <div class="pyramid-container">
+                    <div class="pyramid">
+            `;
+
+            sortedYears.forEach((year, yearIndex) => {
+                const steps = yearGroups.get(year);
                 
-                if (index > 0) {
+                html += `<div class="pyramid-row">`;
+                html += `<div class="pyramid-year">📅 ${year === 'Неизвестно' ? year : formatYear(year)}</div>`;
+                html += `<div class="pyramid-people">`;
+                
+                steps.forEach(step => {
+                    let personClass = 'pyramid-person';
+                    if (step.isStart) personClass += ' person-start';
+                    if (step.isEnd) personClass += ' person-end';
+                    if (step.isAncestor) personClass += ' ancestor';
+                    
+                    let roleText = '';
+                    if (step.isStart) roleText = '(начало)';
+                    else if (step.isEnd) roleText = '(конец)';
+                    else if (step.isAncestor) roleText = '⭐ общий предок';
+                    
                     html += `
-                        <div class="connection-link">
-                            <span class="connection-link-arrow">→</span>
-                            <span class="connection-link-type">${getConnectionTypeLabel(step.type)}</span>
+                        <div class="${personClass}" onclick="showPersonById(${step.person.id})">
+                            <div class="pyramid-person-name">${getShortName(step.person)}</div>
+                            ${roleText ? `<div class="pyramid-person-role">${roleText}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+                
+                // Добавляем коннектор между годами
+                if (yearIndex < sortedYears.length - 1) {
+                    const currentSteps = steps;
+                    const isGoingUp = currentSteps.some(s => s.direction === 'up');
+                    const isGoingDown = currentSteps.some(s => s.direction === 'down');
+                    const isAtAncestor = currentSteps.some(s => s.isAncestor);
+                    
+                    let arrowSymbol = '↓';
+                    let directionClass = 'direction-down';
+                    let directionText = 'ребёнок';
+                    
+                    if (isGoingUp && !isAtAncestor) {
+                        arrowSymbol = '↑';
+                        directionClass = 'direction-up';
+                        directionText = 'родитель';
+                    } else if (isAtAncestor) {
+                        arrowSymbol = '↓';
+                        directionClass = 'direction-down';
+                        directionText = 'ребёнок';
+                    }
+                    
+                    html += `
+                        <div class="pyramid-connector">
+                            <div class="pyramid-direction ${directionClass}">
+                                <span>${arrowSymbol}</span>
+                                <span>${directionText}</span>
+                            </div>
                         </div>
                     `;
                 }
-                
-                html += `
-                    <div class="connection-person ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''}" 
-                         onclick="showPersonById(${step.person.id})">
-                        ${shortName}
-                    </div>
-                `;
             });
-            
-            html += '</div>';
-            html += `<p style="text-align: center; margin-top: 15px; color: #86efac;">
-                Найдена связь через ${path.length - 1} ${path.length - 1 === 1 ? 'шаг' : 'шага'}
-            </p>`;
-            
+
+            html += `</div></div>`;
+
             container.innerHTML = html;
             container.classList.add('show');
         }
@@ -1072,11 +1362,9 @@
             card.className = `person-card ${role}`;
             card.dataset.personId = person.id;
             
-            const shortName = `${person.lastName} ${person.firstName}`.trim() || person.name;
-            
             card.innerHTML = `
                 <div class="person-avatar">${createAvatarContent(person)}</div>
-                <div class="person-name">${shortName}</div>
+                <div class="person-name">${getShortName(person)}</div>
                 ${role ? `<div class="person-role">${role === 'dad' ? 'Папа' : 'Мама'}</div>` : ''}
             `;
             
@@ -1201,8 +1489,7 @@
             
             let options = '<option value="">Выбери человека</option>';
             sortedPeople.forEach(p => {
-                const shortName = `${p.lastName} ${p.firstName}`.trim();
-                options += `<option value="${p.id}">${shortName}</option>`;
+                options += `<option value="${p.id}">${getShortName(p)}</option>`;
             });
             
             select1.innerHTML = options;
@@ -1277,20 +1564,19 @@
             if (parents.length > 0) {
                 familyHTML += `<h4>👨‍👩‍👧 Родители:</h4>`;
                 parents.forEach(p => {
-                    const shortName = `${p.lastName} ${p.firstName}`.trim() || p.name;
                     const hasStudyInfo = p.studyYear && p.studyGroup;
                     
                     if (hasStudyInfo) {
                         familyHTML += `
                             <div class="parent-link" onclick="showParentGroup(${p.id})">
-                                <span class="parent-name">${shortName}</span>
+                                <span class="parent-name">${getShortName(p)}</span>
                                 <span class="parent-group">(${formatYear(p.studyYear)}, гр. ${p.studyGroup})</span>
                             </div>
                         `;
                     } else {
                         familyHTML += `
                             <div class="parent-link" onclick="showPersonById(${p.id})">
-                                <span class="parent-name">${shortName}</span>
+                                <span class="parent-name">${getShortName(p)}</span>
                             </div>
                         `;
                     }
@@ -1322,9 +1608,7 @@
 
         function showPersonById(id) {
             const person = people.find(p => p.id === id);
-            if (person) {
-                showPersonModal(person);
-            }
+            if (person) showPersonModal(person);
         }
 
         function showParentGroup(parentId) {
@@ -1359,10 +1643,9 @@
                 `;
                 curators.forEach(curator => {
                     const role = getCuratorRole(curator, year, group);
-                    const shortName = `${curator.lastName} ${curator.firstName}`.trim();
                     contentHTML += `
                         <div class="group-person curator-${role}" onclick="closeGroupModal(); showPersonById(${curator.id})">
-                            ${shortName} (${role === 'dad' ? 'Папа' : 'Мама'})
+                            ${getShortName(curator)} (${role === 'dad' ? 'Папа' : 'Мама'})
                         </div>
                     `;
                 });
@@ -1376,10 +1659,9 @@
                         <div class="group-person-list">
                 `;
                 children.forEach(child => {
-                    const shortName = `${child.lastName} ${child.firstName}`.trim();
                     contentHTML += `
                         <div class="group-person" onclick="closeGroupModal(); showPersonById(${child.id})">
-                            ${shortName}
+                            ${getShortName(child)}
                         </div>
                     `;
                 });
@@ -1428,7 +1710,7 @@
                         <h3>❌ Ошибка загрузки</h3>
                         <p>${error.message}</p>
                         <p style="margin-top: 10px; color: #86efac;">
-                            Убедитесь, что файл data.txt находится в той же папке, что и index.html
+                            Убедитесь, что файл data.txt находится в той же папке
                         </p>
                     </div>
                 `;
@@ -1447,7 +1729,6 @@
 
             loadData();
 
-            // Поиск связей
             function updateFindButton() {
                 findConnectionBtn.disabled = !person1Select.value || !person2Select.value;
             }
@@ -1458,11 +1739,10 @@
             findConnectionBtn.addEventListener('click', () => {
                 const id1 = parseInt(person1Select.value);
                 const id2 = parseInt(person2Select.value);
-                const path = findConnectionPath(id1, id2);
-                renderConnectionPath(path);
+                const connection = findConnectionThroughAncestor(id1, id2);
+                renderPyramid(connection);
             });
 
-            // Фильтры
             document.querySelector('[data-filter="all"]').addEventListener('click', () => {
                 yearFilter.value = '';
                 groupFilter.value = '';
