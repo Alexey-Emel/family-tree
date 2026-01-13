@@ -11,8 +11,6 @@
 
 let people = [];
 const DATA_FILE = 'data.txt';
-
-// Хранит текущий слайд для каждого года
 const carouselState = {};
 
 
@@ -22,6 +20,13 @@ const carouselState = {};
 
 function formatYear(year) {
     return `${year - 1}-${year}`;
+}
+
+/**
+ * Форматирует номер группы (0 -> 10)
+ */
+function formatGroup(group) {
+    return group === 0 ? 10 : group;
 }
 
 function getInitials(name) {
@@ -42,6 +47,12 @@ function getStepsWord(num) {
     if (num === 1) return 'шаг';
     if (num >= 2 && num <= 4) return 'шага';
     return 'шагов';
+}
+
+function getGroupsWord(num) {
+    if (num === 1) return 'группа';
+    if (num >= 2 && num <= 4) return 'группы';
+    return 'групп';
 }
 
 
@@ -186,27 +197,36 @@ function getAllYears() {
 function getAllGroups() {
     const groups = new Set();
     people.forEach(p => {
-        if (p.studyGroup) groups.add(p.studyGroup);
+        if (p.studyGroup !== null && p.studyGroup !== undefined) groups.add(p.studyGroup);
         p.curatorHistory.forEach(c => groups.add(c.group));
     });
-    return Array.from(groups).sort((a, b) => a - b);
+    // Сортируем: 1, 2, 3, ..., 9, 0 (где 0 = 10)
+    return Array.from(groups).sort((a, b) => {
+        const aVal = a === 0 ? 10 : a;
+        const bVal = b === 0 ? 10 : b;
+        return aVal - bVal;
+    });
 }
 
 function getGroupsForYear(year) {
     const groups = new Set();
     people.forEach(p => {
-        if (p.studyYear === year) groups.add(p.studyGroup);
+        if (p.studyYear === year && p.studyGroup !== null) groups.add(p.studyGroup);
         p.curatorHistory.forEach(c => {
             if (c.year === year) groups.add(c.group);
         });
     });
-    return Array.from(groups).sort((a, b) => a - b);
+    return Array.from(groups).sort((a, b) => {
+        const aVal = a === 0 ? 10 : a;
+        const bVal = b === 0 ? 10 : b;
+        return aVal - bVal;
+    });
 }
 
 function countUniqueYearGroups() {
     const combinations = new Set();
     people.forEach(p => {
-        if (p.studyYear && p.studyGroup) {
+        if (p.studyYear && p.studyGroup !== null) {
             combinations.add(`${p.studyYear}-${p.studyGroup}`);
         }
         p.curatorHistory.forEach(c => {
@@ -504,22 +524,16 @@ function goToSlide(year, slideIndex) {
     
     const totalSlides = track.children.length;
     
-    // Ограничиваем индекс
     if (slideIndex < 0) slideIndex = 0;
     if (slideIndex >= totalSlides) slideIndex = totalSlides - 1;
     
-    // Сохраняем состояние
     carouselState[year] = slideIndex;
-    
-    // Двигаем трек
     track.style.transform = `translateX(-${slideIndex * 100}%)`;
     
-    // Обновляем точки
     dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === slideIndex);
     });
     
-    // Обновляем кнопки
     if (prevBtn) prevBtn.disabled = slideIndex === 0;
     if (nextBtn) nextBtn.disabled = slideIndex === totalSlides - 1;
 }
@@ -532,6 +546,162 @@ function prevSlide(year) {
 function nextSlide(year) {
     const current = carouselState[year] || 0;
     goToSlide(year, current + 1);
+}
+
+
+// ==========================================
+//  ПОИСК ЛЮДЕЙ (SEARCHABLE SELECT)
+// ==========================================
+
+let activeDropdown = null;
+let highlightedIndex = -1;
+
+function initSearchSelects() {
+    setupSearchSelect('person1');
+    setupSearchSelect('person2');
+    
+    // Закрываем при клике вне
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-select')) {
+            closeAllDropdowns();
+        }
+    });
+}
+
+function setupSearchSelect(prefix) {
+    const input = document.getElementById(`${prefix}Input`);
+    const hidden = document.getElementById(`${prefix}Select`);
+    const dropdown = document.getElementById(`${prefix}Dropdown`);
+    
+    if (!input || !hidden || !dropdown) return;
+    
+    // Ввод текста
+    input.addEventListener('input', () => {
+        const query = input.value.trim().toLowerCase();
+        showDropdown(prefix, query);
+        hidden.value = '';
+        input.classList.remove('has-value');
+        updateFindButton();
+    });
+    
+    // Фокус
+    input.addEventListener('focus', () => {
+        const query = input.value.trim().toLowerCase();
+        showDropdown(prefix, query);
+    });
+    
+    // Клавиатура
+    input.addEventListener('keydown', (e) => {
+        const options = dropdown.querySelectorAll('.search-select-option');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIndex = Math.min(highlightedIndex + 1, options.length - 1);
+            updateHighlight(dropdown, options);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIndex = Math.max(highlightedIndex - 1, 0);
+            updateHighlight(dropdown, options);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && options[highlightedIndex]) {
+                selectPerson(prefix, options[highlightedIndex].dataset.id);
+            }
+        } else if (e.key === 'Escape') {
+            closeAllDropdowns();
+            input.blur();
+        }
+    });
+}
+
+function showDropdown(prefix, query) {
+    const dropdown = document.getElementById(`${prefix}Dropdown`);
+    if (!dropdown) return;
+    
+    // Фильтруем людей
+    let filtered = people;
+    if (query) {
+        filtered = people.filter(p => 
+            p.name.toLowerCase().includes(query) ||
+            p.lastName.toLowerCase().includes(query) ||
+            p.firstName.toLowerCase().includes(query)
+        );
+    }
+    
+    // Сортируем
+    filtered = filtered.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    
+    // Ограничиваем количество
+    filtered = filtered.slice(0, 50);
+    
+    // Генерируем HTML
+    if (filtered.length === 0) {
+        dropdown.innerHTML = `<div class="search-select-empty">Никого не найдено</div>`;
+    } else {
+        dropdown.innerHTML = filtered.map(p => {
+            const year = getPersonYear(p);
+            const yearStr = year ? formatYear(year) : '';
+            const groupStr = p.studyGroup !== null && p.studyGroup !== undefined 
+                ? `, гр. ${formatGroup(p.studyGroup)}` 
+                : '';
+            
+            return `
+                <div class="search-select-option" data-id="${p.id}" onclick="selectPerson('${prefix}', ${p.id})">
+                    <div class="search-select-option-name">${getShortName(p)}</div>
+                    ${yearStr ? `<div class="search-select-option-info">${yearStr}${groupStr}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    dropdown.classList.add('show');
+    activeDropdown = prefix;
+    highlightedIndex = -1;
+}
+
+function updateHighlight(dropdown, options) {
+    options.forEach((opt, i) => {
+        opt.classList.toggle('highlighted', i === highlightedIndex);
+    });
+    
+    // Скроллим к выделенному
+    if (highlightedIndex >= 0 && options[highlightedIndex]) {
+        options[highlightedIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function selectPerson(prefix, personId) {
+    const input = document.getElementById(`${prefix}Input`);
+    const hidden = document.getElementById(`${prefix}Select`);
+    const dropdown = document.getElementById(`${prefix}Dropdown`);
+    
+    const person = people.find(p => p.id === parseInt(personId));
+    if (!person) return;
+    
+    input.value = getShortName(person);
+    input.classList.add('has-value');
+    hidden.value = person.id;
+    
+    dropdown.classList.remove('show');
+    activeDropdown = null;
+    
+    updateFindButton();
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.search-select-dropdown').forEach(d => {
+        d.classList.remove('show');
+    });
+    activeDropdown = null;
+    highlightedIndex = -1;
+}
+
+function updateFindButton() {
+    const person1 = document.getElementById('person1Select').value;
+    const person2 = document.getElementById('person2Select').value;
+    const btn = document.getElementById('findConnectionBtn');
+    
+    btn.disabled = !person1 || !person2;
 }
 
 
@@ -584,7 +754,6 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
         const groupsForYear = getGroupsForYear(year);
         let validGroups = [];
         
-        // Фильтруем группы
         groupsForYear.forEach(group => {
             if (filterGroup && group !== parseInt(filterGroup)) return;
             
@@ -606,15 +775,12 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
         
         hasContent = true;
         
-        // Инициализируем состояние карусели
         if (!carouselState[year]) carouselState[year] = 0;
         
-        // Создаём строку года
         const yearRow = document.createElement('div');
         yearRow.className = 'year-row';
         yearRow.dataset.year = year;
         
-        // Заголовок года
         let yearHeader = `
             <div class="year-header">
                 <div class="year-title">
@@ -631,7 +797,6 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
         
         yearHeader += `</div></div>`;
         
-        // Карусель
         let carouselHTML = `
             <div class="carousel-container">
                 <button class="carousel-btn carousel-btn-prev" onclick="prevSlide(${year})" ${validGroups.length <= 1 ? 'disabled' : ''}>
@@ -641,7 +806,6 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
                     <div class="carousel-track">
         `;
         
-        // Слайды групп
         validGroups.forEach(({ group, curators, children }) => {
             const totalPeople = curators.length + children.length;
             
@@ -651,19 +815,17 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
                         <div class="group-header">
                             <div class="group-number">
                                 <span>👥</span>
-                                <span>Группа ${group}</span>
+                                <span>Группа ${formatGroup(group)}</span>
                             </div>
                             <div class="group-count">${totalPeople} человек</div>
                         </div>
                         <div class="family" id="family-${year}-${group}">
             `;
             
-            // Родители
             if (curators.length > 0) {
                 carouselHTML += `<div class="parents" id="parents-${year}-${group}"></div>`;
             }
             
-            // Дети
             if (children.length > 0) {
                 carouselHTML += `<div class="children" id="children-${year}-${group}"></div>`;
             }
@@ -683,7 +845,6 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
         yearRow.innerHTML = yearHeader + carouselHTML;
         container.appendChild(yearRow);
         
-        // Добавляем карточки людей
         validGroups.forEach(({ group, curators, children }) => {
             const parentsContainer = document.getElementById(`parents-${year}-${group}`);
             const childrenContainer = document.getElementById(`children-${year}-${group}`);
@@ -711,12 +872,6 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
             </div>
         `;
     }
-}
-
-function getGroupsWord(num) {
-    if (num === 1) return 'группа';
-    if (num >= 2 && num <= 4) return 'группы';
-    return 'групп';
 }
 
 
@@ -763,14 +918,14 @@ function showPersonModal(person) {
         ${person.studyYear ? `
         <div class="info-row">
             <span class="info-label">📚 Обучение</span>
-            <span class="info-value">${formatYear(person.studyYear)}, группа ${person.studyGroup}</span>
+            <span class="info-value">${formatYear(person.studyYear)}, группа ${formatGroup(person.studyGroup)}</span>
         </div>
         ` : ''}
         ${person.curatorHistory.length > 0 ? `
         <div class="info-row">
             <span class="info-label">👨‍👩‍👧 Куратор</span>
             <span class="info-value">${person.curatorHistory.map(c => 
-                `${formatYear(c.year)} (гр. ${c.group})`
+                `${formatYear(c.year)} (гр. ${formatGroup(c.group)})`
             ).join(', ')}</span>
         </div>
         ` : ''}
@@ -782,11 +937,11 @@ function showPersonModal(person) {
     if (parents.length > 0) {
         familyHTML += `<h4>👨‍👩‍👧 Родители:</h4><div class="family-chips">`;
         parents.forEach(p => {
-            const hasStudyInfo = p.studyYear && p.studyGroup;
+            const hasStudyInfo = p.studyYear && p.studyGroup !== null;
             familyHTML += `
                 <div class="family-chip" onclick="${hasStudyInfo ? `showParentGroup(${p.id})` : `showPersonById(${p.id})`}">
                     <span>${getShortName(p)}</span>
-                    ${hasStudyInfo ? `<span class="family-chip-sub">(${formatYear(p.studyYear)}, гр. ${p.studyGroup})</span>` : ''}
+                    ${hasStudyInfo ? `<span class="family-chip-sub">(${formatYear(p.studyYear)}, гр. ${formatGroup(p.studyGroup)})</span>` : ''}
                 </div>
             `;
         });
@@ -798,7 +953,7 @@ function showPersonModal(person) {
         person.curatorHistory.forEach(c => {
             familyHTML += `
                 <div class="family-chip" onclick="showGroupModal(${c.year}, ${c.group})">
-                    ${formatYear(c.year)}, группа ${c.group}
+                    ${formatYear(c.year)}, группа ${formatGroup(c.group)}
                 </div>
             `;
         });
@@ -824,7 +979,7 @@ function showPersonById(id) {
 
 function showParentGroup(parentId) {
     const parent = people.find(p => p.id === parentId);
-    if (parent && parent.studyYear && parent.studyGroup) {
+    if (parent && parent.studyYear && parent.studyGroup !== null) {
         closePersonModal();
         showGroupModal(parent.studyYear, parent.studyGroup);
     }
@@ -836,7 +991,7 @@ function showGroupModal(year, group) {
     const subtitle = document.getElementById('groupModalSubtitle');
     const content = document.getElementById('groupModalContent');
 
-    title.textContent = `Группа ${group}`;
+    title.textContent = `Группа ${formatGroup(group)}`;
     subtitle.textContent = `${formatYear(year)} учебный год`;
 
     const curators = findCurators(year, group);
@@ -906,25 +1061,8 @@ function updateFilters() {
     });
 
     getAllGroups().forEach(group => {
-        groupFilter.innerHTML += `<option value="${group}">Группа ${group}</option>`;
+        groupFilter.innerHTML += `<option value="${group}">Группа ${formatGroup(group)}</option>`;
     });
-}
-
-function updateConnectionSelects() {
-    const select1 = document.getElementById('person1Select');
-    const select2 = document.getElementById('person2Select');
-    
-    const sortedPeople = [...people].sort((a, b) => 
-        a.name.localeCompare(b.name, 'ru')
-    );
-    
-    let options = '<option value="">Выбери человека</option>';
-    sortedPeople.forEach(p => {
-        options += `<option value="${p.id}">${getShortName(p)}</option>`;
-    });
-    
-    select1.innerHTML = options;
-    select2.innerHTML = options;
 }
 
 function updateStats() {
@@ -956,7 +1094,7 @@ async function loadData() {
         document.getElementById('filtersSection').style.display = 'block';
         
         updateFilters();
-        updateConnectionSelects();
+        initSearchSelects();
         updateStats();
         renderTree();
         
@@ -984,23 +1122,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearFilter = document.getElementById('yearFilter');
     const groupFilter = document.getElementById('groupFilter');
     const searchBox = document.getElementById('searchBox');
-    const person1Select = document.getElementById('person1Select');
-    const person2Select = document.getElementById('person2Select');
     const findConnectionBtn = document.getElementById('findConnectionBtn');
     const allTreeBtn = document.querySelector('[data-filter="all"]');
 
     loadData();
 
-    function updateFindButton() {
-        findConnectionBtn.disabled = !person1Select.value || !person2Select.value;
-    }
-
-    person1Select.addEventListener('change', updateFindButton);
-    person2Select.addEventListener('change', updateFindButton);
-
     findConnectionBtn.addEventListener('click', () => {
-        const id1 = parseInt(person1Select.value);
-        const id2 = parseInt(person2Select.value);
+        const id1 = parseInt(document.getElementById('person1Select').value);
+        const id2 = parseInt(document.getElementById('person2Select').value);
         const connection = findConnectionThroughAncestor(id1, id2);
         renderPyramid(connection);
     });
@@ -1045,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') {
             closePersonModal();
             closeGroupModal();
+            closeAllDropdowns();
         }
     });
 });

@@ -60,7 +60,7 @@
             </div>
         </section>
 
-        <!-- Блок поиска связи между людьми -->
+                <!-- Блок поиска связи между людьми -->
         <section class="connection-section" id="connectionSection">
             <div class="section-header">
                 <h2>🔗 Найти связь</h2>
@@ -68,20 +68,26 @@
             </div>
             
             <div class="connection-form">
-                <div class="select-wrapper">
-                    <select id="person1Select" class="custom-select">
-                        <option value="">Первый человек</option>
-                    </select>
+                <!-- Первый человек -->
+                <div class="search-select-wrapper">
+                    <div class="search-select" id="person1SearchSelect">
+                        <input type="text" class="search-select-input" id="person1Input" placeholder="Введи имя..." autocomplete="off">
+                        <input type="hidden" id="person1Select" value="">
+                        <div class="search-select-dropdown" id="person1Dropdown"></div>
+                    </div>
                 </div>
                 
                 <div class="connection-arrow">
                     <span>↔</span>
                 </div>
                 
-                <div class="select-wrapper">
-                    <select id="person2Select" class="custom-select">
-                        <option value="">Второй человек</option>
-                    </select>
+                <!-- Второй человек -->
+                <div class="search-select-wrapper">
+                    <div class="search-select" id="person2SearchSelect">
+                        <input type="text" class="search-select-input" id="person2Input" placeholder="Введи имя..." autocomplete="off">
+                        <input type="hidden" id="person2Select" value="">
+                        <div class="search-select-dropdown" id="person2Dropdown"></div>
+                    </div>
                 </div>
                 
                 <button class="btn btn-primary" id="findConnectionBtn" disabled>
