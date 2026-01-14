@@ -1541,3 +1541,22 @@ body {
 .search-select-clear:hover {
     color: var(--primary);
 }
+/* Название группы в карусели */
+.group-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-light);
+    margin-top: 5px;
+}
+
+/* Многострочная строка информации */
+.info-row-multiline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.info-row-multiline .info-value {
+    text-align: left;
+    line-height: 1.6;
+}
