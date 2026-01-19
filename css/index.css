@@ -1496,57 +1496,60 @@ body {
     }
 }
 /* =====================================================
-   ДРЕВО ПРЕДКОВ (ИСПРАВЛЕННОЕ ВЫРАВНИВАНИЕ)
+   ДРЕВО ПРЕДКОВ (ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ ЛИНИЙ)
    ===================================================== */
 
+/* Контейнер с прокруткой */
 .ancestors-tree-container {
     background: rgba(0, 0, 0, 0.2);
     border-radius: var(--radius);
-    padding: 40px 20px;
+    padding: 50px 20px;
     overflow-x: auto;
-    /* Центрируем само дерево внутри контейнера */
-    display: flex; 
-    justify-content: center;
+    text-align: center;
+    -webkit-overflow-scrolling: touch; 
 }
 
-/* Узел дерева */
+/* Обертка дерева (таблица для центрирования) */
 .ancestor-node {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Обертка карточки (чтобы линии шли от неё) */
-.ancestor-card-wrapper {
+    display: table; 
+    margin: 0 auto;
     position: relative;
-    padding: 10px;
-    z-index: 2; /* Карточка поверх линий */
 }
 
-/* Карточка */
+/* Обертка карточки */
+.ancestor-card-wrapper {
+    display: inline-block;
+    position: relative;
+    /* УБРАЛИ НИЖНИЙ ОТСТУП, ЧТОБЫ ЛИНИЯ КАСАЛАСЬ КАРТОЧКИ */
+    padding: 0 10px 0 10px; 
+    z-index: 10;
+    margin-bottom: 0; /* Важно! */
+}
+
+/* Сама карточка */
 .ancestor-card-mini {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 14px;
+    padding: 10px 12px;
     background: var(--bg-card);
     border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: var(--transition);
-    min-width: 100px;
-    text-align: center;
+    min-width: 90px;
+    background-color: #0a0f0d; /* Перекрывает линии */
     position: relative;
-    background-color: var(--bg-dark); /* Чтобы линия под карточкой не просвечивала */
+    z-index: 2;
 }
 
 .ancestor-card-mini:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     border-color: var(--primary);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* Цвета ролей */
+/* Цвета */
 .ancestor-card-mini.dad { border-color: var(--dad-color); background: rgba(59, 130, 246, 0.1); }
 .ancestor-card-mini.mom { border-color: var(--mom-color); background: rgba(236, 72, 153, 0.1); }
 
@@ -1556,7 +1559,7 @@ body {
     border-width: 3px;
     background: rgba(16, 185, 129, 0.15);
     transform: scale(1.1);
-    margin-bottom: 10px;
+    margin-bottom: 5px; /* Небольшой отступ для красоты */
 }
 
 .ancestor-card-name { font-weight: 600; font-size: 0.75rem; color: var(--text-primary); }
@@ -1564,9 +1567,7 @@ body {
 .ancestor-card-year { font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; }
 
 /* Пустой слот */
-.ancestor-card-wrapper.empty {
-    opacity: 0.5;
-}
+.ancestor-card-wrapper.empty { opacity: 0.5; }
 .ancestor-empty {
     font-size: 0.7rem;
     color: var(--text-muted);
@@ -1575,17 +1576,17 @@ body {
     border-radius: 5px;
 }
 
-/* --- МАГИЯ ЛИНИЙ --- */
+/* --- ЛИНИИ СВЯЗИ --- */
 
-/* Контейнер веток */
+/* Контейнер веток (родителей) */
 .ancestor-branches {
     display: flex;
     justify-content: center;
     position: relative;
-    padding-top: 20px; /* Место для вертикальной линии от родителя */
+    padding-top: 20px; /* Место для вертикальной линии ВНИЗ от ребенка */
 }
 
-/* Вертикальная линия вниз от родителя */
+/* 1. Вертикальная линия ВНИЗ от Ребенка к горизонтальной перекладине */
 .ancestor-branches::before {
     content: '';
     position: absolute;
@@ -1595,17 +1596,18 @@ body {
     height: 20px;
     background: var(--border-color);
     transform: translateX(-50%);
+    z-index: 1;
 }
 
-/* Ветка (левая или правая) */
+/* Ветка (один родитель) */
 .ancestor-branch {
     position: relative;
-    padding: 20px 10px 0; /* Отступ сверху для горизонтальной линии */
+    padding: 20px 5px 0 5px; /* Отступ сверху для горизонтальной линии */
     display: flex;
-    justify-content: center; /* Центрируем содержимое ветки */
+    justify-content: center;
 }
 
-/* Горизонтальная линия над веткой */
+/* 2. Горизонтальная линия (Перекладина) */
 .ancestor-branch::before {
     content: '';
     position: absolute;
@@ -1626,46 +1628,74 @@ body {
     background: var(--border-color);
 }
 
-/* Вертикальная линия вверх от ветки к горизонтальной линии */
-.ancestor-branch .ancestor-card-wrapper::before {
+/* 3. Вертикальная линия ВНИЗ от горизонтальной перекладины к Родителю */
+/* Мы рисуем её "вверх" от родителя, чтобы она точно попала в центр */
+.ancestor-branch .ancestor-node::before {
     content: '';
     position: absolute;
-    top: -20px; /* Поднимаем линию вверх */
+    top: -20px; /* Начинаем от уровня перекладины */
     left: 50%;
     width: 2px;
     height: 20px;
     background: var(--border-color);
     transform: translateX(-50%);
+    z-index: 1;
 }
 
-/* --- УБИРАЕМ ЛИШНИЕ ЛИНИИ --- */
+/* --- ИСКЛЮЧЕНИЯ --- */
 
-/* У первой ветки (слева) убираем левую половину горизонтальной линии */
-.ancestor-branch:first-child::before {
-    display: none;
-}
+/* Убираем линию слева у первой ветки */
+.ancestor-branch:first-child::before { display: none; }
 
-/* У последней ветки (справа) убираем правую половину горизонтальной линии */
-.ancestor-branch:last-child::after {
-    display: none;
-}
+/* Убираем линию справа у последней ветки */
+.ancestor-branch:last-child::after { display: none; }
 
-/* Если ветка всего одна (единственный родитель) - убираем горизонтальные линии вообще,
-   оставляем только вертикальную */
+/* Если ветка всего одна (нет второго родителя) - прямая линия */
 .ancestor-branch:only-child::before,
 .ancestor-branch:only-child::after {
     display: none;
 }
 
 .ancestor-branch:only-child {
-    padding-top: 0; /* Убираем отступ, линия пойдет прямо */
+    padding-top: 0;
 }
 
-/* Если ветка пустая (нет предка), скрываем линии, чтобы не торчали в пустоту */
+/* Для одиночки удлиняем линию соединения */
+.ancestor-branch:only-child .ancestor-node::before {
+    top: -40px; /* Тянемся выше, до самого ребенка */
+    height: 40px;
+}
+
+/* Если нет данных (is-empty) */
 .ancestor-branch.is-empty::before,
-.ancestor-branch.is-empty::after {
-    opacity: 0.3; /* Или display: none, если хочешь совсем скрыть */
+.ancestor-branch.is-empty::after { opacity: 0.2; }
+.ancestor-branch.is-empty .ancestor-node::before { opacity: 0.2; }
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .ancestor-card-mini {
+        min-width: 80px;
+        padding: 8px;
+    }
+    .ancestor-card-name { font-size: 0.65rem; }
+    .ancestor-branch { padding-left: 2px; padding-right: 2px; }
 }
-.ancestor-branch.is-empty .ancestor-card-wrapper::before {
-    opacity: 0.3;
+
+/* Модальное окно пути (остаётся как было) */
+.path-container { margin-bottom: 15px; }
+.path-title { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px; text-align: center; }
+.path-chain { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.path-step {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 20px; background: var(--bg-card);
+    border: 2px solid var(--border-color); border-radius: var(--radius-sm);
+    cursor: pointer; min-width: 150px; text-align: center; transition: var(--transition);
 }
+.path-step:hover { border-color: var(--primary); }
+.path-step.self { border-color: var(--primary); background: rgba(16, 185, 129, 0.15); }
+.path-step.dad { border-color: var(--dad-color); background: rgba(59, 130, 246, 0.1); }
+.path-step.mom { border-color: var(--mom-color); background: rgba(236, 72, 153, 0.1); }
+.path-step-name { font-weight: 600; font-size: 0.9rem; }
+.path-step-role { font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px; }
+.path-step-year { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.path-arrow { color: var(--primary); font-size: 1.2rem; }
