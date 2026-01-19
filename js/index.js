@@ -1,7 +1,6 @@
 /* =====================================================
    СЕМЕЙНОЕ ДРЕВО ОТРЯДА - ЛОГИКА
-   Автор: Студент 2 курса
-   Описание: Главный скрипт для работы сайта
+   Мобильная версия + древо предков
    ===================================================== */
 
 
@@ -10,7 +9,7 @@
 // ==========================================
 
 let people = [];
-let groupNames = {}; // Хранит названия групп: { "2026-1": "Узкие взгляды", ... }
+let groupNames = {};
 
 const DATA_FILE = 'data.txt';
 const GROUPS_FILE = 'groups.txt';
@@ -26,53 +25,22 @@ function formatYear(year) {
     return `${year - 1}-${year}`;
 }
 
-/**
- * Форматирует номер группы (0 -> 10)
- */
 function formatGroup(group) {
     return group === 0 ? 10 : group;
 }
 
-/**
- * Получает название группы по году и номеру
- * @param {number} year - год (например, 2026)
- * @param {number} group - номер группы (0-9)
- * @returns {string} - название или пустая строка
- */
 function getGroupName(year, group) {
     const key = `${year}-${group}`;
     return groupNames[key] || '';
 }
 
-/**
- * Форматирует отображение группы с названием
- * @param {number} group - номер группы
- * @param {number} year - год (опционально, для получения названия)
- * @returns {string} - "Группа 5" или "Группа 5 «Название»"
- */
 function formatGroupDisplay(group, year = null) {
     const num = formatGroup(group);
     if (year) {
         const name = getGroupName(year, group);
-        if (name) {
-            return `Группа ${num} «${name}»`;
-        }
+        if (name) return `Группа ${num} «${name}»`;
     }
     return `Группа ${num}`;
-}
-
-/**
- * Короткое отображение группы для карточек
- */
-function formatGroupShort(group, year = null) {
-    const num = formatGroup(group);
-    if (year) {
-        const name = getGroupName(year, group);
-        if (name) {
-            return `${num} «${name}»`;
-        }
-    }
-    return `${num}`;
 }
 
 function getInitials(name) {
@@ -101,15 +69,17 @@ function getGroupsWord(num) {
     return 'групп';
 }
 
+function getGenerationWord(num) {
+    if (num === 1) return 'поколение';
+    if (num >= 2 && num <= 4) return 'поколения';
+    return 'поколений';
+}
+
 
 // ==========================================
-//  ПАРСИНГ ДАННЫХ ИЗ ФАЙЛА
+//  ПАРСИНГ ДАННЫХ
 // ==========================================
 
-/**
- * Парсит файл с названиями групп
- * Формат строки: "261Узкие взгляды" -> год 2026, группа 1, название "Узкие взгляды"
- */
 function parseGroupNames(text) {
     const names = {};
     const lines = text.trim().split('\n');
@@ -118,21 +88,17 @@ function parseGroupNames(text) {
         line = line.trim();
         if (!line || line.length < 4) return;
         
-        // Первые 2 символа - год (26 -> 2026)
         const yearCode = parseInt(line.substring(0, 2));
         if (isNaN(yearCode)) return;
         const year = 2000 + yearCode;
         
-        // 3-й символ - номер группы
         const group = parseInt(line[2]);
         if (isNaN(group)) return;
         
-        // Остальное - название
         const name = line.substring(3).trim();
         if (!name) return;
         
-        const key = `${year}-${group}`;
-        names[key] = name;
+        names[`${year}-${group}`] = name;
     });
     
     return names;
@@ -315,6 +281,144 @@ function countUniqueYearGroups() {
 
 
 // ==========================================
+//  ДРЕВО ПРЕДКОВ
+// ==========================================
+
+/**
+ * Получает древо предков для человека
+ * Возвращает массив уровней: [[сам], [родители], [бабушки/дедушки], ...]
+ */
+function getAncestorTree(personId) {
+    const person = people.find(p => p.id === personId);
+    if (!person) return [];
+    
+    const levels = [[{ person, role: 'self' }]];
+    const visited = new Set([personId]);
+    
+    let currentLevel = [person];
+    
+    while (currentLevel.length > 0) {
+        const nextLevel = [];
+        
+        currentLevel.forEach(p => {
+            const parents = findParents(p);
+            
+            parents.forEach(parent => {
+                if (!visited.has(parent.id)) {
+                    visited.add(parent.id);
+                    
+                    // Определяем роль родителя
+                    const role = getCuratorRole(parent, p.studyYear, p.studyGroup);
+                    nextLevel.push({ person: parent, role });
+                }
+            });
+        });
+        
+        if (nextLevel.length > 0) {
+            levels.push(nextLevel);
+            currentLevel = nextLevel.map(item => item.person);
+        } else {
+            break;
+        }
+    }
+    
+    return levels;
+}
+
+/**
+ * Отрисовывает древо предков
+ */
+function renderAncestorTree(personId) {
+    const container = document.getElementById('ancestorsResult');
+    const levels = getAncestorTree(personId);
+    
+    if (levels.length === 0) {
+        container.innerHTML = `
+            <div class="no-connection">
+                <h4>😔 Человек не найден</h4>
+            </div>
+        `;
+        container.classList.add('show');
+        return;
+    }
+    
+    if (levels.length === 1) {
+        container.innerHTML = `
+            <div class="same-person">
+                <h4>📭 Нет данных о предках</h4>
+                <p>У этого человека не найдены кураторы</p>
+            </div>
+        `;
+        container.classList.add('show');
+        return;
+    }
+    
+    const person = levels[0][0].person;
+    const totalAncestors = levels.slice(1).reduce((sum, level) => sum + level.length, 0);
+    
+    let html = `
+        <div class="result-info">
+            <h4>🌳 Древо предков</h4>
+            <p><strong>${getShortName(person)}</strong></p>
+            <p>${levels.length - 1} ${getGenerationWord(levels.length - 1)}, ${totalAncestors} предков</p>
+        </div>
+        <div class="ancestors-tree">
+    `;
+    
+    const levelNames = ['Я', 'Родители', 'Бабушки и дедушки', 'Прабабушки и прадедушки', 'Прапрабабушки и прапрадедушки'];
+    
+    levels.forEach((level, levelIndex) => {
+        const levelName = levelNames[levelIndex] || `${levelIndex} поколение`;
+        
+        html += `
+            <div class="ancestors-level">
+                <div class="ancestors-level-label">${levelName}</div>
+        `;
+        
+        level.forEach(({ person: p, role }) => {
+            const year = getPersonYear(p);
+            let roleClass = '';
+            let roleText = '';
+            
+            if (levelIndex === 0) {
+                roleClass = 'level-0';
+            } else if (role === 'dad') {
+                roleClass = 'dad';
+                roleText = levelIndex === 1 ? 'Папа' : 'Дедушка';
+            } else {
+                roleClass = 'mom';
+                roleText = levelIndex === 1 ? 'Мама' : 'Бабушка';
+            }
+            
+            html += `
+                <div class="ancestor-person ${roleClass}" onclick="showPersonById(${p.id})">
+                    <div class="ancestor-person-name">${getShortName(p)}</div>
+                    ${roleText ? `<div class="ancestor-person-role">${roleText}</div>` : ''}
+                    ${year ? `<div class="ancestor-person-year">${formatYear(year)}</div>` : ''}
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+        
+        // Добавляем коннектор между уровнями
+        if (levelIndex < levels.length - 1) {
+            html += `
+                <div class="ancestors-connector">
+                    <div class="ancestors-connector-line"></div>
+                </div>
+            `;
+        }
+    });
+    
+    html += `</div>`;
+    
+    container.innerHTML = html;
+    container.classList.add('show');
+}
+
+
+// ==========================================
 //  ПОИСК СВЯЗИ МЕЖДУ ЛЮДЬМИ
 // ==========================================
 
@@ -406,7 +510,7 @@ function findConnectionThroughAncestor(person1Id, person2Id) {
 
 
 // ==========================================
-//  ОТРИСОВКА ДЕРЕВА СВЯЗЕЙ
+//  ОТРИСОВКА СВЯЗИ
 // ==========================================
 
 function renderPyramid(connection) {
@@ -456,7 +560,6 @@ function renderPyramid(connection) {
                     <div class="branch-person person-start" onclick="showPersonById(${otherPerson.id})">
                         <div class="branch-person-name">${getShortName(otherPerson)}</div>
                         ${otherYear ? `<div class="branch-person-year">${formatYear(otherYear)}</div>` : ''}
-                        <div class="branch-person-label">Ребёнок</div>
                     </div>
                     <div class="direct-arrow">
                         <div class="direct-arrow-icon">↑</div>
@@ -480,7 +583,6 @@ function renderPyramid(connection) {
                     <div class="branch-person person-end" onclick="showPersonById(${otherPerson.id})">
                         <div class="branch-person-name">${getShortName(otherPerson)}</div>
                         ${otherYear ? `<div class="branch-person-year">${formatYear(otherYear)}</div>` : ''}
-                        <div class="branch-person-label">Ребёнок</div>
                     </div>
                 `}
             </div>
@@ -493,7 +595,7 @@ function renderPyramid(connection) {
         <div class="result-info">
             <h4>✨ Связь найдена!</h4>
             <p>Общий предок: <strong>${getShortName(ancestor)}</strong></p>
-            <p>Шагов: ${totalSteps} (↑${stepsUp} вверх, ↓${stepsDown} вниз)</p>
+            <p>${totalSteps} ${getStepsWord(totalSteps)} (↑${stepsUp} ↓${stepsDown})</p>
         </div>
         <div class="connection-tree">
             <div class="tree-ancestor">
@@ -515,13 +617,13 @@ function renderPyramid(connection) {
         <div class="tree-branch branch-left">
             <div class="branch-header">
                 <span>↑</span>
-                <span>Путь к предку (${stepsUp} ${getStepsWord(stepsUp)})</span>
+                <span>${stepsUp} ${getStepsWord(stepsUp)}</span>
             </div>
             <div class="branch-path">
     `;
     
     if (leftBranch.length === 0) {
-        html += `<div class="branch-empty">Прямой потомок</div>`;
+        html += `<div class="branch-empty">—</div>`;
     } else {
         leftBranch.forEach((person, index) => {
             const year = getPersonYear(person);
@@ -530,17 +632,10 @@ function renderPyramid(connection) {
                 <div class="branch-person ${isLast ? 'person-start' : ''}" onclick="showPersonById(${person.id})">
                     <div class="branch-person-name">${getShortName(person)}</div>
                     ${year ? `<div class="branch-person-year">${formatYear(year)}</div>` : ''}
-                    ${isLast ? '<div class="branch-person-label">Начало</div>' : ''}
                 </div>
             `;
             if (index < leftBranch.length - 1) {
-                html += `
-                    <div class="branch-arrow">
-                        <div class="branch-arrow-line"></div>
-                        <div class="branch-arrow-icon">↓</div>
-                        <div class="branch-arrow-label">ребёнок</div>
-                    </div>
-                `;
+                html += `<div class="branch-arrow"><div class="branch-arrow-icon">↓</div></div>`;
             }
         });
     }
@@ -551,13 +646,13 @@ function renderPyramid(connection) {
         <div class="tree-branch branch-right">
             <div class="branch-header">
                 <span>↓</span>
-                <span>Путь от предка (${stepsDown} ${getStepsWord(stepsDown)})</span>
+                <span>${stepsDown} ${getStepsWord(stepsDown)}</span>
             </div>
             <div class="branch-path">
     `;
     
     if (rightBranch.length === 0) {
-        html += `<div class="branch-empty">Прямой предок</div>`;
+        html += `<div class="branch-empty">—</div>`;
     } else {
         rightBranch.forEach((person, index) => {
             const year = getPersonYear(person);
@@ -566,17 +661,10 @@ function renderPyramid(connection) {
                 <div class="branch-person ${isLast ? 'person-end' : ''}" onclick="showPersonById(${person.id})">
                     <div class="branch-person-name">${getShortName(person)}</div>
                     ${year ? `<div class="branch-person-year">${formatYear(year)}</div>` : ''}
-                    ${isLast ? '<div class="branch-person-label">Конец</div>' : ''}
                 </div>
             `;
             if (index < rightBranch.length - 1) {
-                html += `
-                    <div class="branch-arrow">
-                        <div class="branch-arrow-line"></div>
-                        <div class="branch-arrow-icon">↓</div>
-                        <div class="branch-arrow-label">ребёнок</div>
-                    </div>
-                `;
+                html += `<div class="branch-arrow"><div class="branch-arrow-icon">↓</div></div>`;
             }
         });
     }
@@ -607,22 +695,18 @@ function goToSlide(year, slideIndex) {
     carouselState[year] = slideIndex;
     track.style.transform = `translateX(-${slideIndex * 100}%)`;
     
-    dots.forEach((dot, i) => {
-        dot.classList.toggle('active', i === slideIndex);
-    });
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === slideIndex));
     
     if (prevBtn) prevBtn.disabled = slideIndex === 0;
     if (nextBtn) nextBtn.disabled = slideIndex === totalSlides - 1;
 }
 
 function prevSlide(year) {
-    const current = carouselState[year] || 0;
-    goToSlide(year, current - 1);
+    goToSlide(year, (carouselState[year] || 0) - 1);
 }
 
 function nextSlide(year) {
-    const current = carouselState[year] || 0;
-    goToSlide(year, current + 1);
+    goToSlide(year, (carouselState[year] || 0) + 1);
 }
 
 
@@ -636,6 +720,7 @@ let highlightedIndex = -1;
 function initSearchSelects() {
     setupSearchSelect('person1');
     setupSearchSelect('person2');
+    setupSearchSelect('ancestorPerson');
     
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-select')) {
@@ -652,16 +737,14 @@ function setupSearchSelect(prefix) {
     if (!input || !hidden || !dropdown) return;
     
     input.addEventListener('input', () => {
-        const query = input.value.trim().toLowerCase();
-        showDropdown(prefix, query);
+        showDropdown(prefix, input.value.trim().toLowerCase());
         hidden.value = '';
         input.classList.remove('has-value');
-        updateFindButton();
+        updateButtons();
     });
     
     input.addEventListener('focus', () => {
-        const query = input.value.trim().toLowerCase();
-        showDropdown(prefix, query);
+        showDropdown(prefix, input.value.trim().toLowerCase());
     });
     
     input.addEventListener('keydown', (e) => {
@@ -700,8 +783,7 @@ function showDropdown(prefix, query) {
         );
     }
     
-    filtered = filtered.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-    filtered = filtered.slice(0, 50);
+    filtered = filtered.sort((a, b) => a.name.localeCompare(b.name, 'ru')).slice(0, 30);
     
     if (filtered.length === 0) {
         dropdown.innerHTML = `<div class="search-select-empty">Никого не найдено</div>`;
@@ -711,13 +793,11 @@ function showDropdown(prefix, query) {
             const yearStr = year ? formatYear(year) : '';
             
             let groupStr = '';
-            if (p.studyGroup !== null && p.studyGroup !== undefined && p.studyYear) {
+            if (p.studyGroup !== null && p.studyYear) {
                 const groupName = getGroupName(p.studyYear, p.studyGroup);
-                if (groupName) {
-                    groupStr = `, гр. ${formatGroup(p.studyGroup)} «${groupName}»`;
-                } else {
-                    groupStr = `, гр. ${formatGroup(p.studyGroup)}`;
-                }
+                groupStr = groupName 
+                    ? `, гр. ${formatGroup(p.studyGroup)} «${groupName}»`
+                    : `, гр. ${formatGroup(p.studyGroup)}`;
             }
             
             return `
@@ -735,10 +815,7 @@ function showDropdown(prefix, query) {
 }
 
 function updateHighlight(dropdown, options) {
-    options.forEach((opt, i) => {
-        opt.classList.toggle('highlighted', i === highlightedIndex);
-    });
-    
+    options.forEach((opt, i) => opt.classList.toggle('highlighted', i === highlightedIndex));
     if (highlightedIndex >= 0 && options[highlightedIndex]) {
         options[highlightedIndex].scrollIntoView({ block: 'nearest' });
     }
@@ -759,23 +836,24 @@ function selectPerson(prefix, personId) {
     dropdown.classList.remove('show');
     activeDropdown = null;
     
-    updateFindButton();
+    updateButtons();
 }
 
 function closeAllDropdowns() {
-    document.querySelectorAll('.search-select-dropdown').forEach(d => {
-        d.classList.remove('show');
-    });
+    document.querySelectorAll('.search-select-dropdown').forEach(d => d.classList.remove('show'));
     activeDropdown = null;
     highlightedIndex = -1;
 }
 
-function updateFindButton() {
-    const person1 = document.getElementById('person1Select').value;
-    const person2 = document.getElementById('person2Select').value;
-    const btn = document.getElementById('findConnectionBtn');
+function updateButtons() {
+    const person1 = document.getElementById('person1Select')?.value;
+    const person2 = document.getElementById('person2Select')?.value;
+    const findBtn = document.getElementById('findConnectionBtn');
+    if (findBtn) findBtn.disabled = !person1 || !person2;
     
-    btn.disabled = !person1 || !person2;
+    const ancestorPerson = document.getElementById('ancestorPersonSelect')?.value;
+    const showBtn = document.getElementById('showAncestorsBtn');
+    if (showBtn) showBtn.disabled = !ancestorPerson;
 }
 
 
@@ -810,12 +888,7 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
     container.innerHTML = '';
 
     if (people.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <h3>📭 Данные не загружены</h3>
-                <p>Проверьте наличие файла data.txt</p>
-            </div>
-        `;
+        container.innerHTML = `<div class="empty-state"><h3>📭 Данные не загружены</h3></div>`;
         return;
     }
 
@@ -835,9 +908,9 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
             let children = findChildren(year, group);
             
             if (searchQuery) {
-                const query = searchQuery.toLowerCase();
-                curators = curators.filter(p => p.name.toLowerCase().includes(query));
-                children = children.filter(p => p.name.toLowerCase().includes(query));
+                const q = searchQuery.toLowerCase();
+                curators = curators.filter(p => p.name.toLowerCase().includes(q));
+                children = children.filter(p => p.name.toLowerCase().includes(q));
             }
             
             if (curators.length > 0 || children.length > 0) {
@@ -846,7 +919,6 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
         });
         
         if (validGroups.length === 0) return;
-        
         hasContent = true;
         
         if (!carouselState[year]) carouselState[year] = 0;
@@ -863,90 +935,61 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
                     <span class="year-groups-count">(${validGroups.length} ${getGroupsWord(validGroups.length)})</span>
                 </div>
                 <div class="year-dots">
+                    ${validGroups.map((_, i) => `<div class="year-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${year}, ${i})"></div>`).join('')}
+                </div>
+            </div>
         `;
-        
-        validGroups.forEach((_, index) => {
-            yearHeader += `<div class="year-dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${year}, ${index})"></div>`;
-        });
-        
-        yearHeader += `</div></div>`;
         
         let carouselHTML = `
             <div class="carousel-container">
-                <button class="carousel-btn carousel-btn-prev" onclick="prevSlide(${year})" ${validGroups.length <= 1 ? 'disabled' : ''}>
-                    ‹
-                </button>
+                <button class="carousel-btn carousel-btn-prev" onclick="prevSlide(${year})" ${validGroups.length <= 1 ? 'disabled' : ''}>‹</button>
                 <div class="carousel-viewport">
                     <div class="carousel-track">
         `;
         
         validGroups.forEach(({ group, curators, children }) => {
-            const totalPeople = curators.length + children.length;
+            const total = curators.length + children.length;
             const groupName = getGroupName(year, group);
             
             carouselHTML += `
                 <div class="carousel-slide">
                     <div class="group-card">
                         <div class="group-header">
-                            <div class="group-number">
-                                <span>👥</span>
-                                <span>Группа ${formatGroup(group)}</span>
-                            </div>
+                            <div class="group-number">👥 Группа ${formatGroup(group)}</div>
                             ${groupName ? `<div class="group-name">«${groupName}»</div>` : ''}
-                            <div class="group-count">${totalPeople} человек</div>
+                            <div class="group-count">${total} человек</div>
                         </div>
                         <div class="family" id="family-${year}-${group}">
-            `;
-            
-            if (curators.length > 0) {
-                carouselHTML += `<div class="parents" id="parents-${year}-${group}"></div>`;
-            }
-            
-            if (children.length > 0) {
-                carouselHTML += `<div class="children" id="children-${year}-${group}"></div>`;
-            }
-            
-            carouselHTML += `</div></div></div>`;
-        });
-        
-        carouselHTML += `
+                            ${curators.length > 0 ? `<div class="parents" id="parents-${year}-${group}"></div>` : ''}
+                            ${children.length > 0 ? `<div class="children" id="children-${year}-${group}"></div>` : ''}
+                        </div>
                     </div>
                 </div>
-                <button class="carousel-btn carousel-btn-next" onclick="nextSlide(${year})" ${validGroups.length <= 1 ? 'disabled' : ''}>
-                    ›
-                </button>
-            </div>
-        `;
+            `;
+        });
+        
+        carouselHTML += `</div></div>
+            <button class="carousel-btn carousel-btn-next" onclick="nextSlide(${year})" ${validGroups.length <= 1 ? 'disabled' : ''}>›</button>
+        </div>`;
         
         yearRow.innerHTML = yearHeader + carouselHTML;
         container.appendChild(yearRow);
         
         validGroups.forEach(({ group, curators, children }) => {
-            const parentsContainer = document.getElementById(`parents-${year}-${group}`);
-            const childrenContainer = document.getElementById(`children-${year}-${group}`);
+            const parentsEl = document.getElementById(`parents-${year}-${group}`);
+            const childrenEl = document.getElementById(`children-${year}-${group}`);
             
-            if (parentsContainer) {
-                curators.forEach(curator => {
-                    const role = getCuratorRole(curator, year, group);
-                    parentsContainer.appendChild(createPersonCard(curator, role));
-                });
+            if (parentsEl) {
+                curators.forEach(c => parentsEl.appendChild(createPersonCard(c, getCuratorRole(c, year, group))));
             }
-            
-            if (childrenContainer) {
-                children.forEach(child => {
-                    childrenContainer.appendChild(createPersonCard(child));
-                });
+            if (childrenEl) {
+                children.forEach(c => childrenEl.appendChild(createPersonCard(c)));
             }
         });
     });
 
     if (!hasContent) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <h3>🔍 Ничего не найдено</h3>
-                <p>Попробуй изменить параметры поиска</p>
-            </div>
-        `;
+        container.innerHTML = `<div class="empty-state"><h3>🔍 Ничего не найдено</h3></div>`;
     }
 }
 
@@ -957,75 +1000,47 @@ function renderTree(filterYear = null, filterGroup = null, searchQuery = '') {
 
 function showPersonModal(person) {
     const modal = document.getElementById('personModal');
-    const avatar = document.getElementById('modalAvatar');
-    const name = document.getElementById('modalName');
-    const info = document.getElementById('modalInfo');
-    const family = document.getElementById('modalFamily');
-
-    avatar.innerHTML = createAvatarContent(person);
-    name.textContent = person.name;
+    document.getElementById('modalAvatar').innerHTML = createAvatarContent(person);
+    document.getElementById('modalName').textContent = person.name;
 
     let birthdayStr = '—';
     if (person.birthday) {
-        const birthday = new Date(person.birthday);
-        birthdayStr = birthday.toLocaleDateString('ru-RU', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
+        birthdayStr = new Date(person.birthday).toLocaleDateString('ru-RU', {
+            day: 'numeric', month: 'long', year: 'numeric'
         });
     }
 
-    // Формируем строку обучения с названием группы
     let studyStr = '';
     if (person.studyYear) {
         const groupName = getGroupName(person.studyYear, person.studyGroup);
-        if (groupName) {
-            studyStr = `${formatYear(person.studyYear)}, группа ${formatGroup(person.studyGroup)} «${groupName}»`;
-        } else {
-            studyStr = `${formatYear(person.studyYear)}, группа ${formatGroup(person.studyGroup)}`;
-        }
+        studyStr = groupName 
+            ? `${formatYear(person.studyYear)}, гр. ${formatGroup(person.studyGroup)} «${groupName}»`
+            : `${formatYear(person.studyYear)}, гр. ${formatGroup(person.studyGroup)}`;
     }
 
-    // Формируем строку кураторства с названиями групп
     let curatorStr = '';
     if (person.curatorHistory.length > 0) {
         curatorStr = person.curatorHistory.map(c => {
-            const groupName = getGroupName(c.year, c.group);
-            if (groupName) {
-                return `${formatYear(c.year)}, гр. ${formatGroup(c.group)} «${groupName}»`;
-            }
-            return `${formatYear(c.year)}, гр. ${formatGroup(c.group)}`;
+            const name = getGroupName(c.year, c.group);
+            return name 
+                ? `${formatYear(c.year)}, гр. ${formatGroup(c.group)} «${name}»`
+                : `${formatYear(c.year)}, гр. ${formatGroup(c.group)}`;
         }).join('<br>');
     }
 
-    info.innerHTML = `
-        <div class="info-row">
-            <span class="info-label">📅 Дата рождения</span>
-            <span class="info-value">${birthdayStr}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">📞 Телефон</span>
-            <span class="info-value">${person.phone || '—'}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">💬 ВКонтакте</span>
-            ${person.vk 
-                ? `<a href="${person.vk}" target="_blank" class="info-link">Открыть профиль</a>`
-                : '<span class="info-value">—</span>'
-            }
-        </div>
-        ${studyStr ? `
-        <div class="info-row">
-            <span class="info-label">📚 Обучение</span>
-            <span class="info-value">${studyStr}</span>
-        </div>
-        ` : ''}
-        ${curatorStr ? `
-        <div class="info-row info-row-multiline">
-            <span class="info-label">👨‍👩‍👧 Куратор</span>
-            <span class="info-value">${curatorStr}</span>
-        </div>
-        ` : ''}
+    document.getElementById('modalInfo').innerHTML = `
+        <div class="info-row"><span class="info-label">📅 Дата рождения</span><span class="info-value">${birthdayStr}</span></div>
+        <div class="info-row"><span class="info-label">📞 Телефон</span><span class="info-value">${person.phone || '—'}</span></div>
+        <div class="info-row"><span class="info-label">💬 ВКонтакте</span>${person.vk ? `<a href="${person.vk}" target="_blank" class="info-link">Открыть</a>` : '<span class="info-value">—</span>'}</div>
+        ${studyStr ? `<div class="info-row"><span class="info-label">📚 Обучение</span><span class="info-value">${studyStr}</span></div>` : ''}
+        ${curatorStr ? `<div class="info-row info-row-multiline"><span class="info-label">👨‍👩‍👧 Куратор</span><span class="info-value">${curatorStr}</span></div>` : ''}
+    `;
+
+    // Кнопка "Показать предков"
+    document.getElementById('modalActions').innerHTML = `
+        <button class="btn btn-secondary" onclick="closePersonModal(); showAncestorsForPerson(${person.id})">
+            🌳 Показать предков
+        </button>
     `;
 
     const parents = findParents(person);
@@ -1034,48 +1049,34 @@ function showPersonModal(person) {
     if (parents.length > 0) {
         familyHTML += `<h4>👨‍👩‍👧 Родители:</h4><div class="family-chips">`;
         parents.forEach(p => {
-            const hasStudyInfo = p.studyYear && p.studyGroup !== null;
+            const hasInfo = p.studyYear && p.studyGroup !== null;
             let chipInfo = '';
-            if (hasStudyInfo) {
-                const groupName = getGroupName(p.studyYear, p.studyGroup);
-                if (groupName) {
-                    chipInfo = `(${formatYear(p.studyYear)}, гр. ${formatGroup(p.studyGroup)} «${groupName}»)`;
-                } else {
-                    chipInfo = `(${formatYear(p.studyYear)}, гр. ${formatGroup(p.studyGroup)})`;
-                }
+            if (hasInfo) {
+                const name = getGroupName(p.studyYear, p.studyGroup);
+                chipInfo = name 
+                    ? `(${formatYear(p.studyYear)}, гр. ${formatGroup(p.studyGroup)} «${name}»)`
+                    : `(${formatYear(p.studyYear)}, гр. ${formatGroup(p.studyGroup)})`;
             }
-            familyHTML += `
-                <div class="family-chip" onclick="${hasStudyInfo ? `showParentGroup(${p.id})` : `showPersonById(${p.id})`}">
-                    <span>${getShortName(p)}</span>
-                    ${chipInfo ? `<span class="family-chip-sub">${chipInfo}</span>` : ''}
-                </div>
-            `;
+            familyHTML += `<div class="family-chip" onclick="${hasInfo ? `showParentGroup(${p.id})` : `showPersonById(${p.id})`}">
+                <span>${getShortName(p)}</span>
+                ${chipInfo ? `<span class="family-chip-sub">${chipInfo}</span>` : ''}
+            </div>`;
         });
         familyHTML += `</div>`;
     }
 
     if (person.curatorHistory.length > 0) {
-        familyHTML += `<h4 style="margin-top: 20px;">👶 Курировал группы:</h4><div class="family-chips">`;
+        familyHTML += `<h4 style="margin-top:15px;">👶 Курировал:</h4><div class="family-chips">`;
         person.curatorHistory.forEach(c => {
-            const groupName = getGroupName(c.year, c.group);
-            let chipText = `${formatYear(c.year)}, гр. ${formatGroup(c.group)}`;
-            if (groupName) {
-                chipText += ` «${groupName}»`;
-            }
-            familyHTML += `
-                <div class="family-chip" onclick="showGroupModal(${c.year}, ${c.group})">
-                    ${chipText}
-                </div>
-            `;
+            const name = getGroupName(c.year, c.group);
+            let text = `${formatYear(c.year)}, гр. ${formatGroup(c.group)}`;
+            if (name) text += ` «${name}»`;
+            familyHTML += `<div class="family-chip" onclick="showGroupModal(${c.year}, ${c.group})">${text}</div>`;
         });
         familyHTML += `</div>`;
     }
 
-    if (!familyHTML) {
-        familyHTML = '<p style="color: var(--text-muted); margin-top: 10px;">Нет связей в базе данных</p>';
-    }
-
-    family.innerHTML = familyHTML;
+    document.getElementById('modalFamily').innerHTML = familyHTML || '<p style="color:var(--text-muted);margin-top:10px;">Нет связей</p>';
     modal.classList.add('active');
 }
 
@@ -1090,7 +1091,7 @@ function showPersonById(id) {
 
 function showParentGroup(parentId) {
     const parent = people.find(p => p.id === parentId);
-    if (parent && parent.studyYear && parent.studyGroup !== null) {
+    if (parent?.studyYear && parent?.studyGroup !== null) {
         closePersonModal();
         showGroupModal(parent.studyYear, parent.studyGroup);
     }
@@ -1098,67 +1099,58 @@ function showParentGroup(parentId) {
 
 function showGroupModal(year, group) {
     const modal = document.getElementById('groupModal');
-    const title = document.getElementById('groupModalTitle');
-    const subtitle = document.getElementById('groupModalSubtitle');
-    const content = document.getElementById('groupModalContent');
-
     const groupName = getGroupName(year, group);
     
-    if (groupName) {
-        title.textContent = `Группа ${formatGroup(group)} «${groupName}»`;
-    } else {
-        title.textContent = `Группа ${formatGroup(group)}`;
-    }
-    subtitle.textContent = `${formatYear(year)} учебный год`;
+    document.getElementById('groupModalTitle').textContent = groupName 
+        ? `Группа ${formatGroup(group)} «${groupName}»`
+        : `Группа ${formatGroup(group)}`;
+    document.getElementById('groupModalSubtitle').textContent = `${formatYear(year)} учебный год`;
 
     const curators = findCurators(year, group);
     const children = findChildren(year, group);
 
-    let contentHTML = '';
+    let html = '';
 
     if (curators.length > 0) {
-        contentHTML += `
-            <div class="group-modal-section">
-                <h4>👨‍👩‍👧 Кураторы</h4>
-                <div class="group-person-list">
-        `;
-        curators.forEach(curator => {
-            const role = getCuratorRole(curator, year, group);
-            contentHTML += `
-                <div class="group-person-chip curator-${role}" onclick="closeGroupModal(); showPersonById(${curator.id})">
-                    ${getShortName(curator)} (${role === 'dad' ? 'Папа' : 'Мама'})
-                </div>
-            `;
+        html += `<div class="group-modal-section"><h4>👨‍👩‍👧 Кураторы</h4><div class="group-person-list">`;
+        curators.forEach(c => {
+            const role = getCuratorRole(c, year, group);
+            html += `<div class="group-person-chip curator-${role}" onclick="closeGroupModal();showPersonById(${c.id})">${getShortName(c)} (${role === 'dad' ? 'Папа' : 'Мама'})</div>`;
         });
-        contentHTML += `</div></div>`;
+        html += `</div></div>`;
     }
 
     if (children.length > 0) {
-        contentHTML += `
-            <div class="group-modal-section">
-                <h4>👥 Кандидаты (${children.length} чел.)</h4>
-                <div class="group-person-list">
-        `;
-        children.forEach(child => {
-            contentHTML += `
-                <div class="group-person-chip" onclick="closeGroupModal(); showPersonById(${child.id})">
-                    ${getShortName(child)}
-                </div>
-            `;
+        html += `<div class="group-modal-section"><h4>👥 Кандидаты (${children.length})</h4><div class="group-person-list">`;
+        children.forEach(c => {
+            html += `<div class="group-person-chip" onclick="closeGroupModal();showPersonById(${c.id})">${getShortName(c)}</div>`;
         });
-        contentHTML += `</div></div>`;
+        html += `</div></div>`;
     }
 
-    if (!curators.length && !children.length) {
-        contentHTML = '<p style="color: var(--text-muted); text-align: center;">Нет данных об этой группе</p>';
-    }
-
-    content.innerHTML = contentHTML;
+    document.getElementById('groupModalContent').innerHTML = html || '<p style="color:var(--text-muted);text-align:center;">Нет данных</p>';
     modal.classList.add('active');
 }
 
 function closeGroupModal() {
     document.getElementById('groupModal').classList.remove('active');
+}
+
+function showAncestorsForPerson(personId) {
+    // Переключаемся на таб предков
+    switchTab('ancestors');
+    
+    // Заполняем поле поиска
+    const person = people.find(p => p.id === personId);
+    if (person) {
+        document.getElementById('ancestorPersonInput').value = getShortName(person);
+        document.getElementById('ancestorPersonInput').classList.add('has-value');
+        document.getElementById('ancestorPersonSelect').value = personId;
+        updateButtons();
+        
+        // Показываем древо
+        renderAncestorTree(personId);
+    }
 }
 
 
@@ -1173,13 +1165,8 @@ function updateFilters() {
     yearFilter.innerHTML = '<option value="">Год</option>';
     groupFilter.innerHTML = '<option value="">Группа</option>';
     
-    getAllYears().forEach(year => {
-        yearFilter.innerHTML += `<option value="${year}">${formatYear(year)}</option>`;
-    });
-
-    getAllGroups().forEach(group => {
-        groupFilter.innerHTML += `<option value="${group}">Группа ${formatGroup(group)}</option>`;
-    });
+    getAllYears().forEach(y => yearFilter.innerHTML += `<option value="${y}">${formatYear(y)}</option>`);
+    getAllGroups().forEach(g => groupFilter.innerHTML += `<option value="${g}">Группа ${formatGroup(g)}</option>`);
 }
 
 function updateStats() {
@@ -1191,36 +1178,36 @@ function updateStats() {
 
 
 // ==========================================
+//  ТАБЫ
+// ==========================================
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`));
+}
+
+
+// ==========================================
 //  ЗАГРУЗКА ДАННЫХ
 // ==========================================
 
 async function loadData() {
     try {
-        // Загружаем названия групп (если файл есть)
         try {
             const groupsResponse = await fetch(GROUPS_FILE);
             if (groupsResponse.ok) {
-                const groupsText = await groupsResponse.text();
-                groupNames = parseGroupNames(groupsText);
-                console.log(`Загружено ${Object.keys(groupNames).length} названий групп`);
+                groupNames = parseGroupNames(await groupsResponse.text());
             }
-        } catch (e) {
-            console.log('Файл groups.txt не найден, названия групп не будут отображаться');
-        }
+        } catch (e) {}
         
-        // Загружаем основные данные
         const response = await fetch(DATA_FILE);
+        if (!response.ok) throw new Error(`Файл не найден: ${DATA_FILE}`);
         
-        if (!response.ok) {
-            throw new Error(`Файл не найден: ${DATA_FILE}`);
-        }
-        
-        const text = await response.text();
-        people = parseFileData(text);
+        people = parseFileData(await response.text());
         people.forEach((p, i) => p.id = i + 1);
         
         document.getElementById('statsSection').style.display = 'block';
-        document.getElementById('connectionSection').style.display = 'block';
+        document.getElementById('tabsSection').style.display = 'block';
         document.getElementById('filtersSection').style.display = 'block';
         
         updateFilters();
@@ -1229,15 +1216,11 @@ async function loadData() {
         renderTree();
         
     } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        
+        console.error(error);
         document.getElementById('treeContainer').innerHTML = `
             <div class="error-state">
                 <h3>❌ Ошибка загрузки</h3>
                 <p>${error.message}</p>
-                <p style="margin-top: 10px; color: var(--text-secondary);">
-                    Убедитесь, что файл data.txt находится в корневой папке проекта
-                </p>
             </div>
         `;
     }
@@ -1253,18 +1236,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const groupFilter = document.getElementById('groupFilter');
     const searchBox = document.getElementById('searchBox');
     const findConnectionBtn = document.getElementById('findConnectionBtn');
+    const showAncestorsBtn = document.getElementById('showAncestorsBtn');
     const allTreeBtn = document.querySelector('[data-filter="all"]');
 
     loadData();
 
-    findConnectionBtn.addEventListener('click', () => {
-        const id1 = parseInt(document.getElementById('person1Select').value);
-        const id2 = parseInt(document.getElementById('person2Select').value);
-        const connection = findConnectionThroughAncestor(id1, id2);
-        renderPyramid(connection);
+    // Табы
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    allTreeBtn.addEventListener('click', () => {
+    // Поиск связи
+    findConnectionBtn?.addEventListener('click', () => {
+        const id1 = parseInt(document.getElementById('person1Select').value);
+        const id2 = parseInt(document.getElementById('person2Select').value);
+        renderPyramid(findConnectionThroughAncestor(id1, id2));
+    });
+
+    // Древо предков
+    showAncestorsBtn?.addEventListener('click', () => {
+        const id = parseInt(document.getElementById('ancestorPersonSelect').value);
+        renderAncestorTree(id);
+    });
+
+    // Фильтры
+    allTreeBtn?.addEventListener('click', () => {
         yearFilter.value = '';
         groupFilter.value = '';
         searchBox.value = '';
@@ -1273,18 +1269,18 @@ document.addEventListener('DOMContentLoaded', () => {
         allTreeBtn.classList.add('active');
     });
 
-    yearFilter.addEventListener('change', () => {
+    yearFilter?.addEventListener('change', () => {
         renderTree(yearFilter.value, groupFilter.value, searchBox.value);
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
     });
 
-    groupFilter.addEventListener('change', () => {
+    groupFilter?.addEventListener('change', () => {
         renderTree(yearFilter.value, groupFilter.value, searchBox.value);
         document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
     });
 
     let searchTimeout;
-    searchBox.addEventListener('input', () => {
+    searchBox?.addEventListener('input', () => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             renderTree(yearFilter.value, groupFilter.value, searchBox.value);
@@ -1292,15 +1288,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 
-    document.getElementById('personModal').addEventListener('click', (e) => {
+    // Закрытие модалок
+    document.getElementById('personModal')?.addEventListener('click', e => {
         if (e.target.id === 'personModal') closePersonModal();
     });
 
-    document.getElementById('groupModal').addEventListener('click', (e) => {
+    document.getElementById('groupModal')?.addEventListener('click', e => {
         if (e.target.id === 'groupModal') closeGroupModal();
     });
 
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closePersonModal();
             closeGroupModal();

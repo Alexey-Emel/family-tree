@@ -2,39 +2,33 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Семейное древо отряда</title>
     
-    <!-- Подключаем шрифт -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Подключаем наши стили -->
     <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 
-    <!-- Декоративный фон -->
     <div class="bg-decoration">
         <div class="bg-circle bg-circle-1"></div>
         <div class="bg-circle bg-circle-2"></div>
         <div class="bg-circle bg-circle-3"></div>
     </div>
 
-    <!-- Шапка сайта -->
     <header class="header">
         <div class="header-content">
             <div class="logo">🌳</div>
             <div class="header-text">
                 <h1>Семейное древо</h1>
-                <p>Педагогический отряд • 21 год истории</p>
+                <p>Педагогический отряд</p>
             </div>
         </div>
     </header>
 
-    <!-- Главный контент -->
     <main class="main">
         
-        <!-- Блок статистики -->
+        <!-- Статистика -->
         <section class="stats-section" id="statsSection">
             <div class="stats-grid">
                 <div class="stat-card">
@@ -45,7 +39,7 @@
                 <div class="stat-card">
                     <div class="stat-icon">📅</div>
                     <div class="stat-number" id="statYears">0</div>
-                    <div class="stat-label">Лет истории</div>
+                    <div class="stat-label">Лет</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">👨‍👩‍👧</div>
@@ -60,95 +54,112 @@
             </div>
         </section>
 
-                <!-- Блок поиска связи между людьми -->
-        <section class="connection-section" id="connectionSection">
-            <div class="section-header">
-                <h2>🔗 Найти связь</h2>
-                <p>Выбери двух человек, чтобы увидеть их родственную связь</p>
+        <!-- Табы для переключения функций -->
+        <section class="tabs-section" id="tabsSection">
+            <div class="tabs">
+                <button class="tab active" data-tab="tree">🌳 Древо</button>
+                <button class="tab" data-tab="connection">🔗 Связь</button>
+                <button class="tab" data-tab="ancestors">👨‍👩‍👧 Предки</button>
             </div>
-            
-            <div class="connection-form">
-                <!-- Первый человек -->
-                <div class="search-select-wrapper">
-                    <div class="search-select" id="person1SearchSelect">
-                        <input type="text" class="search-select-input" id="person1Input" placeholder="Введи имя..." autocomplete="off">
-                        <input type="hidden" id="person1Select" value="">
-                        <div class="search-select-dropdown" id="person1Dropdown"></div>
-                    </div>
-                </div>
-                
-                <div class="connection-arrow">
-                    <span>↔</span>
-                </div>
-                
-                <!-- Второй человек -->
-                <div class="search-select-wrapper">
-                    <div class="search-select" id="person2SearchSelect">
-                        <input type="text" class="search-select-input" id="person2Input" placeholder="Введи имя..." autocomplete="off">
-                        <input type="hidden" id="person2Select" value="">
-                        <div class="search-select-dropdown" id="person2Dropdown"></div>
-                    </div>
-                </div>
-                
-                <button class="btn btn-primary" id="findConnectionBtn" disabled>
-                    <span>Найти</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <!-- Результат поиска связи -->
-            <div class="connection-result" id="connectionResult"></div>
         </section>
 
-        <!-- Фильтры -->
-        <section class="filters-section" id="filtersSection">
-            <div class="filters-row">
-                <button class="filter-chip active" data-filter="all">
-                    Всё древо
-                </button>
-                
-                <select id="yearFilter" class="filter-select">
-                    <option value="">Год</option>
-                </select>
-                
-                <select id="groupFilter" class="filter-select">
-                    <option value="">Группа</option>
-                </select>
-                
-                <div class="search-wrapper">
+        <!-- Таб: Дерево -->
+        <section class="tab-content active" id="tabTree">
+            <div class="filters-section" id="filtersSection">
+                <div class="filters-row">
+                    <button class="filter-chip active" data-filter="all">Все</button>
+                    <select id="yearFilter" class="filter-select">
+                        <option value="">Год</option>
+                    </select>
+                    <select id="groupFilter" class="filter-select">
+                        <option value="">Группа</option>
+                    </select>
+                </div>
+                <div class="search-wrapper-full">
                     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                     <input type="text" id="searchBox" class="search-input" placeholder="Поиск по имени...">
                 </div>
             </div>
+            <div class="tree-section" id="treeContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Загружаем данные...</p>
+                </div>
+            </div>
         </section>
 
-        <!-- Дерево -->
-        <section class="tree-section" id="treeContainer">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <p>Загружаем данные...</p>
+        <!-- Таб: Поиск связи -->
+        <section class="tab-content" id="tabConnection">
+            <div class="connection-section">
+                <div class="section-header">
+                    <h2>🔗 Найти связь</h2>
+                    <p>Выбери двух человек</p>
+                </div>
+                
+                <div class="connection-form">
+                    <div class="search-select-wrapper">
+                        <div class="search-select">
+                            <input type="text" class="search-select-input" id="person1Input" placeholder="Первый человек..." autocomplete="off">
+                            <input type="hidden" id="person1Select" value="">
+                            <div class="search-select-dropdown" id="person1Dropdown"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="connection-arrow">↔</div>
+                    
+                    <div class="search-select-wrapper">
+                        <div class="search-select">
+                            <input type="text" class="search-select-input" id="person2Input" placeholder="Второй человек..." autocomplete="off">
+                            <input type="hidden" id="person2Select" value="">
+                            <div class="search-select-dropdown" id="person2Dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary btn-full" id="findConnectionBtn" disabled>
+                    🔍 Найти связь
+                </button>
+                
+                <div class="connection-result" id="connectionResult"></div>
+            </div>
+        </section>
+
+        <!-- Таб: Древо предков -->
+        <section class="tab-content" id="tabAncestors">
+            <div class="ancestors-section">
+                <div class="section-header">
+                    <h2>👨‍👩‍👧 Древо предков</h2>
+                    <p>Выбери человека, чтобы увидеть его предков</p>
+                </div>
+                
+                <div class="search-select-wrapper-full">
+                    <div class="search-select">
+                        <input type="text" class="search-select-input" id="ancestorPersonInput" placeholder="Выбери человека..." autocomplete="off">
+                        <input type="hidden" id="ancestorPersonSelect" value="">
+                        <div class="search-select-dropdown" id="ancestorPersonDropdown"></div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary btn-full" id="showAncestorsBtn" disabled>
+                    🌳 Показать древо предков
+                </button>
+                
+                <div class="ancestors-result" id="ancestorsResult"></div>
             </div>
         </section>
 
     </main>
 
-    <!-- Футер -->
     <footer class="footer">
         <p>Сделано с 💚 для нашего отряда</p>
     </footer>
 
-    <!-- Модальное окно профиля человека -->
+    <!-- Модальное окно профиля -->
     <div class="modal-overlay" id="personModal">
         <div class="modal modal-person">
-            <button class="modal-close" onclick="closePersonModal()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-            </button>
+            <button class="modal-close" onclick="closePersonModal()">✕</button>
             
             <div class="modal-header">
                 <div class="modal-avatar" id="modalAvatar"></div>
@@ -157,6 +168,7 @@
             
             <div class="modal-body">
                 <div class="modal-info" id="modalInfo"></div>
+                <div class="modal-actions" id="modalActions"></div>
                 <div class="modal-family" id="modalFamily"></div>
             </div>
         </div>
@@ -165,11 +177,7 @@
     <!-- Модальное окно группы -->
     <div class="modal-overlay" id="groupModal">
         <div class="modal modal-group">
-            <button class="modal-close" onclick="closeGroupModal()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-            </button>
+            <button class="modal-close" onclick="closeGroupModal()">✕</button>
             
             <div class="modal-header">
                 <h2 class="modal-title" id="groupModalTitle"></h2>
@@ -180,7 +188,6 @@
         </div>
     </div>
 
-    <!-- Подключаем наш скрипт -->
     <script src="js/index.js"></script>
 
 </body>
