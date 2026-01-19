@@ -1,6 +1,6 @@
 /* =====================================================
    СЕМЕЙНОЕ ДРЕВО ОТРЯДА - ЛОГИКА
-   Мобильная версия + древо предков
+   Мобильная версия + древо предков с ветвями
    ===================================================== */
 
 
@@ -10,6 +10,7 @@
 
 let people = [];
 let groupNames = {};
+let currentAncestorPersonId = null; // Для отслеживания выбранного человека
 
 const DATA_FILE = 'data.txt';
 const GROUPS_FILE = 'groups.txt';
@@ -281,48 +282,227 @@ function countUniqueYearGroups() {
 
 
 // ==========================================
-//  ДРЕВО ПРЕДКОВ
+//  ДРЕВО ПРЕДКОВ (НОВАЯ ВЕРСИЯ С ВЕТВЯМИ)
 // ==========================================
 
 /**
- * Получает древо предков для человека
- * Возвращает массив уровней: [[сам], [родители], [бабушки/дедушки], ...]
+ * Рекурсивно строит дерево предков
+ * Возвращает объект: { person, role, dad: {...}, mom: {...} }
  */
-function getAncestorTree(personId) {
-    const person = people.find(p => p.id === personId);
-    if (!person) return [];
-    
-    const levels = [[{ person, role: 'self' }]];
-    const visited = new Set([personId]);
-    
-    let currentLevel = [person];
-    
-    while (currentLevel.length > 0) {
-        const nextLevel = [];
-        
-        currentLevel.forEach(p => {
-            const parents = findParents(p);
-            
-            parents.forEach(parent => {
-                if (!visited.has(parent.id)) {
-                    visited.add(parent.id);
-                    
-                    // Определяем роль родителя
-                    const role = getCuratorRole(parent, p.studyYear, p.studyGroup);
-                    nextLevel.push({ person: parent, role });
-                }
-            });
-        });
-        
-        if (nextLevel.length > 0) {
-            levels.push(nextLevel);
-            currentLevel = nextLevel.map(item => item.person);
-        } else {
-            break;
-        }
+function buildAncestorNode(person, role, childPerson, visited = new Set()) {
+    if (!person || visited.has(person.id)) {
+        return null;
     }
     
-    return levels;
+    visited.add(person.id);
+    
+    const node = {
+        person: person,
+        role: role,
+        childPerson: childPerson, // Чей это родитель
+        dad: null,
+        mom: null
+    };
+    
+    const parents = findParents(person);
+    
+    parents.forEach(parent => {
+        const parentRole = getCuratorRole(parent, person.studyYear, person.studyGroup);
+        const parentNode = buildAncestorNode(parent, parentRole, person, new Set(visited));
+        
+        if (parentRole === 'dad') {
+            node.dad = parentNode;
+        } else {
+            node.mom = parentNode;
+        }
+    });
+    
+    return node;
+}
+
+/**
+ * Получает путь от предка к исходному человеку
+ */
+function getPathToDescendant(ancestorId, targetId, currentNode, path = []) {
+    if (!currentNode) return null;
+    
+    const newPath = [...path, {
+        person: currentNode.person,
+        role: currentNode.role
+    }];
+    
+    if (currentNode.person.id === ancestorId) {
+        return newPath;
+    }
+    
+    // Ищем в ветке папы
+    if (currentNode.dad) {
+        const dadPath = getPathToDescendant(ancestorId, targetId, currentNode.dad, newPath);
+        if (dadPath) return dadPath;
+    }
+    
+    // Ищем в ветке мамы
+    if (currentNode.mom) {
+        const momPath = getPathToDescendant(ancestorId, targetId, currentNode.mom, newPath);
+        if (momPath) return momPath;
+    }
+    
+    return null;
+}
+
+/**
+ * Считает общее количество предков в дереве
+ */
+function countAncestors(node) {
+    if (!node) return 0;
+    return 1 + countAncestors(node.dad) + countAncestors(node.mom);
+}
+
+/**
+ * Считает максимальную глубину дерева
+ */
+function getTreeDepth(node) {
+    if (!node) return 0;
+    return 1 + Math.max(getTreeDepth(node.dad), getTreeDepth(node.mom));
+}
+
+/**
+ * Рендерит узел дерева рекурсивно
+ */
+function renderAncestorNode(node, depth = 0) {
+    // Если узла нет (данных нет)
+    if (!node) {
+        return `
+            <div class="ancestor-card-wrapper empty">
+                <div class="ancestor-empty">Нет данных</div>
+            </div>
+        `;
+    }
+    
+    const person = node.person;
+    const year = getPersonYear(person);
+    const isRoot = depth === 0;
+    
+    let roleLabel = '';
+    if (node.role === 'dad') roleLabel = 'Папа';
+    else if (node.role === 'mom') roleLabel = 'Мама';
+    
+    // Проверяем, есть ли родители (чтобы рисовать или не рисовать ветки)
+    const hasDad = !!node.dad;
+    const hasMom = !!node.mom;
+    const hasParents = hasDad || hasMom;
+    
+    let html = `
+        <div class="ancestor-node ${isRoot ? 'root' : ''}">
+            <div class="ancestor-card-wrapper">
+                <div class="ancestor-card-mini ${node.role || ''}" onclick="showAncestorPath(${person.id})" data-person-id="${person.id}">
+                    <div class="ancestor-card-name">${getShortName(person)}</div>
+                    ${roleLabel ? `<div class="ancestor-card-role">${roleLabel}</div>` : ''}
+                    ${year ? `<div class="ancestor-card-year">${formatYear(year)}</div>` : ''}
+                </div>
+            </div>
+    `;
+    
+    // Рисуем ветки только если есть хотя бы один родитель
+    if (hasParents) {
+        html += `
+            <div class="ancestor-branches">
+                <div class="ancestor-branch branch-dad ${!hasDad ? 'is-empty' : ''}">
+                    ${renderAncestorNode(node.dad, depth + 1)}
+                </div>
+                <div class="ancestor-branch branch-mom ${!hasMom ? 'is-empty' : ''}">
+                    ${renderAncestorNode(node.mom, depth + 1)}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += `</div>`;
+    
+    return html;
+}
+
+/**
+ * Показывает путь от предка к выбранному человеку
+ */
+function showAncestorPath(ancestorId) {
+    if (!currentAncestorPersonId) return;
+    
+    const person = people.find(p => p.id === currentAncestorPersonId);
+    const ancestor = people.find(p => p.id === ancestorId);
+    
+    if (!person || !ancestor) return;
+    
+    // Если кликнули на того же человека - показываем его профиль
+    if (ancestorId === currentAncestorPersonId) {
+        showPersonById(ancestorId);
+        return;
+    }
+    
+    // Строим дерево и ищем путь
+    const tree = buildAncestorNode(person, 'self', null, new Set());
+    const path = getPathToDescendant(ancestorId, currentAncestorPersonId, tree);
+    
+    if (!path) {
+        showPersonById(ancestorId);
+        return;
+    }
+    
+    // Показываем модальное окно с путём
+    showPathModal(path.reverse(), person);
+}
+
+/**
+ * Показывает модальное окно с путём
+ */
+function showPathModal(path, targetPerson) {
+    const modal = document.getElementById('personModal');
+    const ancestor = path[0].person;
+    
+    document.getElementById('modalAvatar').innerHTML = createAvatarContent(ancestor);
+    document.getElementById('modalName').textContent = getShortName(ancestor);
+    
+    // Строим путь
+    let pathHtml = `
+        <div class="path-container">
+            <div class="path-title">Путь к ${getShortName(targetPerson)}:</div>
+            <div class="path-chain">
+    `;
+    
+    path.forEach((step, index) => {
+        const p = step.person;
+        const year = getPersonYear(p);
+        const isLast = index === path.length - 1;
+        
+        let roleText = '';
+        if (step.role === 'dad') roleText = 'Папа';
+        else if (step.role === 'mom') roleText = 'Мама';
+        else if (step.role === 'self') roleText = 'Выбранный';
+        
+        pathHtml += `
+            <div class="path-step ${step.role}" onclick="showPersonById(${p.id})">
+                <div class="path-step-name">${getShortName(p)}</div>
+                ${roleText && !isLast ? `<div class="path-step-role">${roleText}</div>` : ''}
+                ${year ? `<div class="path-step-year">${formatYear(year)}</div>` : ''}
+            </div>
+        `;
+        
+        if (!isLast) {
+            pathHtml += `<div class="path-arrow">↓</div>`;
+        }
+    });
+    
+    pathHtml += `</div></div>`;
+    
+    document.getElementById('modalInfo').innerHTML = pathHtml;
+    document.getElementById('modalActions').innerHTML = `
+        <button class="btn btn-secondary" onclick="showPersonById(${ancestor.id})">
+            👤 Профиль ${getShortName(ancestor)}
+        </button>
+    `;
+    document.getElementById('modalFamily').innerHTML = '';
+    
+    modal.classList.add('active');
 }
 
 /**
@@ -330,9 +510,9 @@ function getAncestorTree(personId) {
  */
 function renderAncestorTree(personId) {
     const container = document.getElementById('ancestorsResult');
-    const levels = getAncestorTree(personId);
+    const person = people.find(p => p.id === personId);
     
-    if (levels.length === 0) {
+    if (!person) {
         container.innerHTML = `
             <div class="no-connection">
                 <h4>😔 Человек не найден</h4>
@@ -342,7 +522,12 @@ function renderAncestorTree(personId) {
         return;
     }
     
-    if (levels.length === 1) {
+    currentAncestorPersonId = personId;
+    
+    // Строим дерево
+    const tree = buildAncestorNode(person, 'self', null, new Set());
+    
+    if (!tree || (!tree.dad && !tree.mom)) {
         container.innerHTML = `
             <div class="same-person">
                 <h4>📭 Нет данных о предках</h4>
@@ -353,65 +538,22 @@ function renderAncestorTree(personId) {
         return;
     }
     
-    const person = levels[0][0].person;
-    const totalAncestors = levels.slice(1).reduce((sum, level) => sum + level.length, 0);
+    const totalAncestors = countAncestors(tree) - 1; // Минус сам человек
+    const depth = getTreeDepth(tree) - 1; // Минус корень
     
     let html = `
         <div class="result-info">
             <h4>🌳 Древо предков</h4>
             <p><strong>${getShortName(person)}</strong></p>
-            <p>${levels.length - 1} ${getGenerationWord(levels.length - 1)}, ${totalAncestors} предков</p>
+            <p>${depth} ${getGenerationWord(depth)}, ${totalAncestors} предков</p>
+            <p class="path-hint">👆 Нажми на предка, чтобы увидеть путь к нему</p>
         </div>
-        <div class="ancestors-tree">
+        <div class="ancestors-tree-container">
+            <div class="ancestors-tree-scroll">
+                ${renderAncestorNode(tree)}
+            </div>
+        </div>
     `;
-    
-    const levelNames = ['Я', 'Родители', 'Бабушки и дедушки', 'Прабабушки и прадедушки', 'Прапрабабушки и прапрадедушки'];
-    
-    levels.forEach((level, levelIndex) => {
-        const levelName = levelNames[levelIndex] || `${levelIndex} поколение`;
-        
-        html += `
-            <div class="ancestors-level">
-                <div class="ancestors-level-label">${levelName}</div>
-        `;
-        
-        level.forEach(({ person: p, role }) => {
-            const year = getPersonYear(p);
-            let roleClass = '';
-            let roleText = '';
-            
-            if (levelIndex === 0) {
-                roleClass = 'level-0';
-            } else if (role === 'dad') {
-                roleClass = 'dad';
-                roleText = levelIndex === 1 ? 'Папа' : 'Дедушка';
-            } else {
-                roleClass = 'mom';
-                roleText = levelIndex === 1 ? 'Мама' : 'Бабушка';
-            }
-            
-            html += `
-                <div class="ancestor-person ${roleClass}" onclick="showPersonById(${p.id})">
-                    <div class="ancestor-person-name">${getShortName(p)}</div>
-                    ${roleText ? `<div class="ancestor-person-role">${roleText}</div>` : ''}
-                    ${year ? `<div class="ancestor-person-year">${formatYear(year)}</div>` : ''}
-                </div>
-            `;
-        });
-        
-        html += `</div>`;
-        
-        // Добавляем коннектор между уровнями
-        if (levelIndex < levels.length - 1) {
-            html += `
-                <div class="ancestors-connector">
-                    <div class="ancestors-connector-line"></div>
-                </div>
-            `;
-        }
-    });
-    
-    html += `</div>`;
     
     container.innerHTML = html;
     container.classList.add('show');
@@ -1036,10 +1178,9 @@ function showPersonModal(person) {
         ${curatorStr ? `<div class="info-row info-row-multiline"><span class="info-label">👨‍👩‍👧 Куратор</span><span class="info-value">${curatorStr}</span></div>` : ''}
     `;
 
-    // Кнопка "Показать предков"
     document.getElementById('modalActions').innerHTML = `
         <button class="btn btn-secondary" onclick="closePersonModal(); showAncestorsForPerson(${person.id})">
-            🌳 Показать предков
+            🌳 Предки
         </button>
     `;
 
@@ -1137,18 +1278,14 @@ function closeGroupModal() {
 }
 
 function showAncestorsForPerson(personId) {
-    // Переключаемся на таб предков
     switchTab('ancestors');
     
-    // Заполняем поле поиска
     const person = people.find(p => p.id === personId);
     if (person) {
         document.getElementById('ancestorPersonInput').value = getShortName(person);
         document.getElementById('ancestorPersonInput').classList.add('has-value');
         document.getElementById('ancestorPersonSelect').value = personId;
         updateButtons();
-        
-        // Показываем древо
         renderAncestorTree(personId);
     }
 }
@@ -1241,25 +1378,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadData();
 
-    // Табы
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // Поиск связи
     findConnectionBtn?.addEventListener('click', () => {
         const id1 = parseInt(document.getElementById('person1Select').value);
         const id2 = parseInt(document.getElementById('person2Select').value);
         renderPyramid(findConnectionThroughAncestor(id1, id2));
     });
 
-    // Древо предков
     showAncestorsBtn?.addEventListener('click', () => {
         const id = parseInt(document.getElementById('ancestorPersonSelect').value);
         renderAncestorTree(id);
     });
 
-    // Фильтры
     allTreeBtn?.addEventListener('click', () => {
         yearFilter.value = '';
         groupFilter.value = '';
@@ -1288,7 +1421,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 
-    // Закрытие модалок
     document.getElementById('personModal')?.addEventListener('click', e => {
         if (e.target.id === 'personModal') closePersonModal();
     });
